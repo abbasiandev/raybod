@@ -20,10 +20,10 @@ class CloudSyncWorker(
     private val api: CloudBrainApi
 ) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): androidx.work.ListenableWorker.Result {
         val pendingRisks = riskDao.getAllRisks().filter { it.syncStatus == SyncStatus.PENDING.name }
         
-        if (pendingRisks.isEmpty()) return Result.success()
+        if (pendingRisks.isEmpty()) return androidx.work.ListenableWorker.Result.success()
 
         var successCount = 0
         pendingRisks.forEach { entity ->
@@ -59,6 +59,6 @@ class CloudSyncWorker(
             }
         }
 
-        return if (successCount > 0) Result.success() else Result.retry()
+        return if (successCount > 0) androidx.work.ListenableWorker.Result.success() else androidx.work.ListenableWorker.Result.retry()
     }
 }
