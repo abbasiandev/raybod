@@ -1,125 +1,217 @@
 package com.codekhoda.presentation.scan
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.window.Dialog
+import com.codekhoda.domain.model.RiskAssessment
 import com.codekhoda.domain.model.RiskLevel
-import com.codekhoda.presentation.theme.NeonCyan
-import com.codekhoda.presentation.theme.AlertRed
+import com.codekhoda.presentation.components.*
+import com.codekhoda.presentation.theme.*
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun ScanScreen(
-    viewModel: ScanViewModel = viewModel()
+    viewModel: ScanViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    var selectedAssessment by remember { mutableStateOf<RiskAssessment?>(null) }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DeepBlack)
     ) {
-        // Radar Visualization
-        RadarView(isScanning = state.isScanning)
+        // Decorative Background Gradient
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            NeonPurple.copy(alpha = 0.15f),
+                            DeepBlack
+                        ),
+                        radius = 800f
+                    )
+                )
+        )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (state.isScanning) {
-            Text("Scanning: ${state.currentApp}", style = MaterialTheme.typography.bodyMedium)
-            LinearProgressIndicator(
-                progress = state.progress,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                color = NeonCyan
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header
+            Text(
+                text = "HYBRID SENTINEL",
+                style = MaterialTheme.typography.headlineMedium,
+                color = NeonCyan,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp)
             )
-        } else {
-            Button(
-                onClick = { viewModel.startScan() },
-                colors = ButtonDefaults.buttonColors(containerColor = NeonCyan)
-            ) {
-                Text("INITIATE CLOUD SCAN", color = Color.Black)
+            
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Radar Visualization
+            RadarVisualization(
+                isScanning = state.isScanning,
+                progress = state.progress,
+                scanPhase = determineScanPhase(state),
+                threatCount = state.results.count { it.riskLevel == RiskLevel.HIGH || it.riskLevel == RiskLevel.CRITICAL }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Action Area
+            if (!state.isScanning) {
+                CyberButton(
+                    text = if (state.results.isEmpty()) "INITIATE SYSTEM SCAN" else "RESCAN SYSTEM",
+                    onClick = { viewModel.startScan() },
+                    variant = ButtonVariant.PRIMARY,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                )
+            } else {
+                ScanningStatus(state.currentApp)
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Results List
+            if (state.results.isNotEmpty()) {
+                Text(
+                    text = "SCAN RESULTS",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = TextSecondary,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(
+                        items = state.results,
+                        key = { it.packageName }
+                    ) { result ->
+                        ResultItemCard(
+                            result = result,
+                            onClick = { selectedAssessment = result }
+                        )
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Results List
-        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-            items(state.results) { result ->
-                ResultItem(result)
+        // Details Logic
+        if (selectedAssessment != null) {
+            Dialog(onDismissRequest = { selectedAssessment = null }) {
+                ThreatDetailsScreen(
+                    assessment = selectedAssessment!!,
+                    onDismiss = { selectedAssessment = null }
+                )
             }
         }
     }
 }
 
 @Composable
-fun ResultItem(result: com.codekhoda.domain.model.RiskAssessment) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+fun ScanningStatus(currentApp: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "SCANNING PACKAGE",
+            style = MaterialTheme.typography.labelSmall,
+            color = NeonCyan
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = currentApp.substringAfterLast('.'),
+            style = MaterialTheme.typography.bodyLarge,
+            color = TextPrimary,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+fun ResultItemCard(
+    result: RiskAssessment,
+    onClick: () -> Unit
+) {
+    val status = when (result.riskLevel) {
+        RiskLevel.SAFE -> CardStatus.SAFE
+        RiskLevel.LOW -> CardStatus.NEUTRAL
+        RiskLevel.MEDIUM -> CardStatus.WARNING
+        else -> CardStatus.DANGER
+    }
+
+    StatusCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp),
+        status = status,
+        animated = status == CardStatus.DANGER || status == CardStatus.WARNING
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatusIndicator(
+                status = when (result.riskLevel) {
+                    RiskLevel.SAFE -> IndicatorStatus.SAFE
+                    RiskLevel.LOW -> IndicatorStatus.NEUTRAL
+                    RiskLevel.MEDIUM -> IndicatorStatus.WARNING
+                    else -> IndicatorStatus.DANGER
+                }
+            )
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = result.packageName,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f)
+                    text = result.packageName.substringAfterLast('.'),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = result.riskLevel.name,
-                    color = if (result.riskLevel == RiskLevel.SAFE) Color.Green else AlertRed,
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextSecondary
                 )
             }
-            if (result.description.isNotEmpty()) {
-                Text(
-                    text = result.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-            }
+            
+            Icon(
+                imageVector = androidx.compose.material.icons.Icons.Filled.ArrowForward,
+                contentDescription = "Details",
+                tint = TextSecondary
+            )
         }
     }
 }
 
-@Composable
-fun RadarView(isScanning: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition(label = "Radar")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing)
-        ),
-        label = "Rotation"
-    )
-
-    Canvas(modifier = Modifier.size(200.dp)) {
-        drawCircle(
-            color = NeonCyan.copy(alpha = 0.3f),
-            style = Stroke(width = 2.dp.toPx())
-        )
-        drawCircle(
-            color = NeonCyan.copy(alpha = 0.1f),
-            radius = size.minDimension / 4
-        )
-        
-        if (isScanning) {
-            drawArc(
-                color = NeonCyan,
-                startAngle = rotation,
-                sweepAngle = 90f,
-                useCenter = true,
-                alpha = 0.5f
-            )
-        }
+private fun determineScanPhase(state: ScanUiState): ScanPhase {
+    return when {
+        !state.isScanning && state.results.isNotEmpty() -> ScanPhase.VERDICT
+        !state.isScanning -> ScanPhase.IDLE
+        state.progress < 0.3f -> ScanPhase.EXTRACTING
+        else -> ScanPhase.ANALYZING
     }
 }

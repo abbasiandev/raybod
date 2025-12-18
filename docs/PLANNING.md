@@ -1,102 +1,86 @@
-# 🎯 Project Planning: Hybrid Cloud Sentinel (HCS)
+# 🦅 Project Sentinel: Strategic & Architectural Blueprint
 
-This document outlines the strategic roadmap, architectural decisions, and detailed implementation phases for the Hybrid Cloud Sentinel project. It balances high-impact features with practical, proven engineering solutions.
-
----
-
-## 1. Project Vision & Strategy
-
-### 1.1 The Problem
-Modern mobile threats are complex, but many share common structural "DNA" (permissions and intent patterns) that traditional scanners miss. Users need instant protection without battery drain.
-
-### 1.2 The Solution: "Hybrid Cloud Sentinel"
-We deploy a **Practical AI** approach:
-- **Instant On-Device AI**: A lightweight TFLite model (trained on the Drebin dataset) runs locally to detect 95% of common threats in milliseconds.
-- **Deep Cloud Analysis**: A secondary layer for edge cases, handling heavy lifting and global threat correlation.
-
-### 1.3 Strategic Pillars
-- **Platform**: Android (Kotlin) + Backend (Python FastAPI).
-- **Core Intelligence**: **TensorFlow Lite (TFLite)** for offline inference.
-- **Feature Engineering**: Vectorization of `AndroidManifest.xml` (Permissions + Intents).
-- **Architecture**: Clean Architecture + MVVM + Modularization.
+This document serves as the single source of truth for the **Hybrid Cloud Sentinel** project. It outlines the strategic mandate, system architecture, and the phased implementation roadmap to deliver a next-generation mobile threat defense platform.
 
 ---
 
-## 2. Architectural Blueprint
+## 1.0 Strategic Mandate & Market Opportunity
 
-### 2.1 The "Sentinel Brain" (Agent Module)
-- **Feature Extractor**: Parses installed apps to generate a 2000-dimension binary vector (One-hot encoding of Permissions & Intents).
-- **Inference Engine**: Runs the `saved_model.tflite` to output a Risk Score (0.0 - 1.0).
-- **Verdict System**: Classifies apps as Safe, Risky, or Malware based on confidence thresholds.
+### 1.1 The Evolving Mobile Threat Landscape
+Mobile devices are the new perimeter. The convergence of personal and professional data on a single device makes them high-value targets.
+*   **85%** of organizations reported increased mobile attacks (Verizon MSI).
+*   **4M+** mobile-focused social engineering attacks in 2024.
+*   **BYOD** expands the attack surface significantly.
 
-### 2.2 Cloud Integration (Backend)
-- **FastAPI**: Receives metadata from the device for secondary validation.
-- **Threat Database**: Aggregates community findings (Crowdsourced Intelligence).
-- **Model Updates**: Delivers new `.tflite` models to devices OTA (Over-The-Air).
+**Primary Attack Vectors:**
+1.  **Phishing/Smishing**: Leading threat (48% in Retail, 39% in Healthcare).
+2.  **Vulnerable Applications**: Unpatched apps as entry points.
+3.  **Surveillanceware**: Stealthy data exfiltration (e.g., BnkRat, KrSpy).
+4.  **Sideloaded Apps**: Bypassing store vetting mechanisms.
 
----
+### 1.2 The Solution: Hybrid Cloud Sentinel
+Our response is **"Practical AI"**:
+*   **On-Device**: Instant, offline, battery-efficient protection using TFLite.
+*   **Cloud**: Deep analysis and global threat intelligence.
 
-## 3. Implementation Roadmap (The Marathon)
-
-### Phase 0: Foundation & Skeleton ✅
-- [x] Multi-module Android project setup.
-- [x] Backend FastAPI skeleton.
-- [x] Version Catalog & CI Foundation.
-
-### Phase 1: Core Domain & Data Layer ✅
-- [x] Define **Ubiquitous Language** (RiskAssessment, AppPackage).
-- [x] Implement **ThreatRepository** with local shadowing.
-- [x] Room caching for offline-first protection.
-
-### Phase 1.5: Test Infrastructure ✅
-- [x] **Backend Tests**: 56 pytest tests for API, heuristics, and schemas.
-- [x] **Domain Tests**: Unit tests for models, enums, and use cases.
-- [x] **Data Tests**: Repository, mapper, DTO, and ML score interpretation tests.
-- [x] **Presentation Tests**: ViewModel lifecycle and state management tests.
-- [x] See [TESTING.md](./TESTING.md) for full documentation.
-
-### Phase 2: On-Device AI Integration (The Core Win) ✅
-- [x] **Asset Integration**: Import `saved_model.tflite` and `features.json` from reference architecture.
-- [x] **Feature Extractor**: Implement `PackageInfo` -> `FloatArray` converter (The "DNA" Extractor).
-- [x] **TFLite Service**: Create a robust `MalwareScanner` class wrapping the interpreter.
-- [x] **Validation**: Verify correct inference against known benign apps.
-
-### Phase 3: Real-Time Protection 🔄
-- [ ] **SentinelService**: Wire up the Foreground Service to `PACKAGE_ADDED` broadcasts.
-- [ ] **Instant Alerting**: Trigger "Scanning..." notification -> "Threat Detected!" alert.
-- [ ] **Performance Tuning**: Ensure background scan takes < 500ms per app.
-
-### Phase 4: UI/UX & Visualization 🎨
-- [ ] **Radar Dashboard**: Visualize the scanning process (Scanning -> Feature Extraction -> Verdict).
-- [ ] **Threat Details**: Show **WHY** an app was flagged (e.g., "High Risk: Requests SMS + Camera + Internet").
-- [ ] **Cyberpunk Polish**: Dark mode, neon accents, smooth transitions.
-
-### Phase 5: Cloud Connector (The "Hybrid" Part) ☁️
-- [ ] **Metadata Upload**: Send hashes of scanned apps to the Cloud Brain.
-- [ ] **Global Allowlist**: Cloud API verifies if a "Risky" app is actually a known safe app (False Positive Mitigation).
+**Architectural Pillars:**
+| Pillar | Justification |
+| :--- | :--- |
+| **Platform Focus** | Android first for deep API integration and broad market reach. |
+| **Core Intelligence** | Lightweight **TFLite** model to minimize battery drain (a top user complaint). |
+| **Feature Engineering** | "DNA" analysis of `AndroidManifest.xml` (Permissions + Intents) vs signatures. |
+| **Software Architecture** | **Hybrid Model**: Offline autonomy + Cloud collective intelligence. |
 
 ---
 
-## 4. Technical Deep Dive: The Machine Learning Stack
+## 2.0 System Architecture Blueprint
 
-We are using a **proven Malware Detection Pipeline**:
+### 2.1 On-Device Agent: The "Sentinel Brain"
+Autonomous, real-time threat detection.
+*   **Feature Extractor**: Static analysis of `AndroidManifest.xml` & bytecode. Generates a binary feature vector (DNA) based on risky permissions/intents (inspired by Drebin).
+*   **Inference Engine**: Optimized **TensorFlow Lite** model (`saved_model.tflite`). Input: Feature Vector -> Output: Risk Score (0.0 - 1.0).
+*   **Verdict System**: Maps Risk Score to **Safe**, **Risky**, or **Malware**.
 
-1.  **Input**: `AndroidManifest.xml` of the target app.
-2.  **Extraction**:
-    -   Compare app permissions against a dictionary of ~500 risky permissions.
-    -   Compare app intents against a dictionary of ~1500 suspicious intents.
-    -   **Result**: A fixed-size float array (e.g., `float[2000]`).
-3.  **Inference**:
-    -   Load `.tflite` model.
-    -   `model.run(inputVector, outputScore)`.
-4.  **Output**: `Float` (0.0 = Safe, 1.0 = Malware).
-
-This approach is **deterministic, explainable, and offline-ready**.
+### 2.2 Cloud Infrastructure: The Global Intelligence Hub
+Python FastAPI backend acting as a force multiplier.
+*   **Crowdsourced Intelligence**: Aggregates anonymized threat metadata.
+*   **False Positive Mitigation**: "Global Allowlist" API to verify risky verdicts.
+*   **OTA Model Updates**: Secure delivery of new `.tflite` models.
 
 ---
 
-## 5. Definition of Done (DoD)
-- [ ] **AI-Powered**: The app actually runs a TFLite model, no random number generators.
-- [ ] **Responsive**: UI never freezes during analysis.
-- [ ] **Accurate**: correctly identifies a test virus sample (EICAR or custom mock).
-- [ ] **Beautiful**: The "Hacker/Cyberpunk" aesthetic is consistent.
+## 3.0 Enriched Implementation Roadmap
+
+### Phase 0-2: Foundational Layers & Core AI Engine (Completed)
+Established the technical bedrock and on-device detection.
+- [x] **Project & Backend Setup**: Android multi-module + Python FastAPI skeleton.
+- [x] **Test Infrastructure**: Comprehensive coverage for Domain, Data, and Presentation layers.
+- [x] **On-Device AI Integration**: `saved_model.tflite` integration, "DNA" Feature Extractor with Explainability, and TFLite Service.
+
+### Phase 3: Real-Time Protection (Completed)
+Transforming from on-demand to always-on.
+- [x] **Develop SentinelService**: Foreground service listening for `PACKAGE_ADDED`.
+- [x] **Implement Instant Alerting**: Notifications for "Scanning..." and "Threat Detected!".
+- [x] **Optimize Performance**: Enforce < 500ms execution budget via efficient signature hashing and resource parsing.
+
+### Phase 4: UI/UX & Threat Visualization (Completed)
+Building trust through transparency and aesthetics.
+- [x] **Radar Dashboard**: Visualize the scanning process (Scanning -> Feature Extraction -> Verdict).
+- [x] **Threat Details View**: Explainability - Show **WHY** an app was flagged (e.g., "Requests SMS + Camera").
+- [x] **Cyberpunk Polish**: Apply "Hacker/Cyberpunk" design system (Neon colors, dark mode, glich effects).
+
+### Phase 5: Cloud Connector & Hybrid Intelligence (Completed)
+Activating the hybrid network effects.
+- [x] **Enable Metadata Upload**: Send anonymized threat signatures to the cloud.
+- [x] **Integrate Global Allowlist API**: Check "Risky" verdicts against the cloud allowlist.
+
+---
+
+## 4.0 Definition of Done & Success Metrics
+
+| Criterion | Metric | Strategic Justification |
+| :--- | :--- | :--- |
+| **AI-Powered** | Detection driven solely by `.tflite` output (mocked in tests). | Validates the core "Practical AI" value proposition. |
+| **Responsive** | UI never blocks. Background scan < 500ms. | Mitigates battery drain constraints and ensures retention. |
+| **Accurate** | Correctly flags test virus (EICAR) as Malware. | Proves effective end-to-end detection. |
+| **Beautiful** | Adheres to "Cyberpunk/Hacker" aesthetic. | key differentiator; builds brand identity. |

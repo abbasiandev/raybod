@@ -49,7 +49,7 @@ class FeatureExtractorTest {
             intents = emptyList()
         )
         
-        val vector = featureExtractor.extractFeatures(appPackage)
+        val vector = featureExtractor.extractFeatures(appPackage).featureVector
         
         assertEquals(1f, vector[0], 0.0f) // INTERNET
         assertEquals(0f, vector[1], 0.0f) // CAMERA
@@ -65,7 +65,7 @@ class FeatureExtractorTest {
             intents = listOf("android.intent.action.BOOT_COMPLETED") // Only 2nd intent
         )
         
-        val vector = featureExtractor.extractFeatures(appPackage)
+        val vector = featureExtractor.extractFeatures(appPackage).featureVector
         
         // Offset for intents is permissionFeatures.size (2 in this test)
         assertEquals(0f, vector[2], 0.0f) // MAIN
@@ -82,7 +82,7 @@ class FeatureExtractorTest {
             intents = listOf("android.intent.action.MAIN")
         )
         
-        val vector = featureExtractor.extractFeatures(appPackage)
+        val vector = featureExtractor.extractFeatures(appPackage).featureVector
         
         assertEquals(1f, vector[0], 0.0f)
         assertEquals(1f, vector[1], 0.0f)

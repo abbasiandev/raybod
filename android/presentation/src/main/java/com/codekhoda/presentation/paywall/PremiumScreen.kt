@@ -3,6 +3,8 @@ package com.codekhoda.presentation.paywall
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +29,7 @@ fun PremiumScreen() {
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = androidx.compose.material.icons.Icons.Filled.Shield, // Requires material-icons-extended, using generic star for now if shield not available in core
+            imageVector = Icons.Filled.Star,
             contentDescription = "Premium Shield",
             tint = NeonCyan,
             modifier = Modifier.size(80.dp)

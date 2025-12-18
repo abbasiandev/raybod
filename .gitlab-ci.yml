@@ -1,0 +1,113 @@
+# GitLab CI/CD configuration for Android project
+# This pipeline includes lint, test, and build stages
+
+# Using a pre-built Android image for faster builds
+# jangrewe/gitlab-ci-android is a well-tested image for GitLab CI
+image: jangrewe/gitlab-ci-android
+
+stages:
+  - lint
+  - test
+  - build
+
+variables:
+  ANDROID_COMPILE_SDK: "34"
+  ANDROID_BUILD_TOOLS: "34.0.0"
+  ANDROID_MIN_SDK: "26"
+  ANDROID_TARGET_SDK: "34"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxMetaspaceSize=512m'"
+
+before_script:
+  - export GRADLE_USER_HOME=$(pwd)/.gradle
+  - cd android
+  - chmod +x ./gradlew || true
+
+cache:
+  key: ${CI_PROJECT_ID}-${CI_COMMIT_REF_SLUG}
+  paths:
+    - android/.gradle/
+    - .gradle/
+  policy: pull-push
+
+# Lint stage - Check code quality
+lint:
+  stage: lint
+  script:
+    - ./gradlew lint --stacktrace --no-daemon || true
+  artifacts:
+    when: always
+    reports:
+      junit: app/build/outputs/lint-results-*.xml
+    paths:
+      - app/build/outputs/lint-results-*.xml
+      - app/build/reports/lint-results-*.html
+    expire_in: 1 week
+  only:
+    - merge_requests
+    - main
+    - develop
+  allow_failure: true
+
+# Unit tests stage
+test:
+  stage: test
+  script:
+    - ./gradlew test --stacktrace --no-daemon --continue
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - "**/build/test-results/test/TEST-*.xml"
+        - "**/build/test-results/**/TEST-*.xml"
+    paths:
+      - "**/build/test-results/"
+      - "**/build/reports/tests/"
+    expire_in: 1 week
+  coverage: '/Total.*?([0-9]{1,3})%/'
+  only:
+    - merge_requests
+    - main
+    - develop
+    - tags
+
+# Build debug APK
+build:debug:
+  stage: build
+  script:
+    - ./gradlew assembleDebug --stacktrace --no-daemon
+  artifacts:
+    paths:
+      - app/build/outputs/apk/debug/*.apk
+    expire_in: 1 week
+  only:
+    - merge_requests
+    - main
+    - develop
+    - tags
+
+# Build release APK (only for main branch and tags)
+build:release:
+  stage: build
+  script:
+    - ./gradlew assembleRelease --stacktrace --no-daemon
+  artifacts:
+    paths:
+      - app/build/outputs/apk/release/*.apk
+    expire_in: 30 days
+  only:
+    - main
+    - tags
+  when: manual
+
+# Build AAB (Android App Bundle) for release
+build:bundle:
+  stage: build
+  script:
+    - ./gradlew bundleRelease --stacktrace --no-daemon
+  artifacts:
+    paths:
+      - app/build/outputs/bundle/release/*.aab
+    expire_in: 30 days
+  only:
+    - tags
+  when: manual

@@ -3,12 +3,39 @@ package com.codekhoda.data.ml
 import android.content.Context
 import com.codekhoda.domain.model.AppPackage
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.codekhoda.data.ml.FeatureAnalysisResult
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.InputStream
 import java.nio.charset.Charset
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * Data class to hold both the raw vector for TFLite and the human-readable features for UI.
+ */
+data class FeatureAnalysisResult(
+    val featureVector: FloatArray,
+    val matchedFeatures: List<String>
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as FeatureAnalysisResult
+
+        if (!featureVector.contentEquals(other.featureVector)) return false
+        if (matchedFeatures != other.matchedFeatures) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = featureVector.contentHashCode()
+        result = 31 * result + matchedFeatures.hashCode()
+        return result
+    }
+}
 
 @Singleton
 class FeatureExtractor @Inject constructor(
@@ -43,8 +70,9 @@ class FeatureExtractor @Inject constructor(
         vectorSize = 2000
     }
 
-    fun extractFeatures(appPackage: AppPackage): FloatArray {
+    fun extractFeatures(appPackage: AppPackage): FeatureAnalysisResult {
         val vector = FloatArray(vectorSize) { 0f }
+        val matchedFeatures = mutableListOf<String>()
         
         // 1. Map Permissions
         // Reference uses direct index mapping
@@ -52,6 +80,7 @@ class FeatureExtractor @Inject constructor(
             if (appPackage.permissions.contains(feature)) {
                 if (index < vectorSize) {
                     vector[index] = 1f
+                    matchedFeatures.add("Permission: $feature")
                 }
             }
         }
@@ -66,11 +95,12 @@ class FeatureExtractor @Inject constructor(
                 val targetIndex = intentOffset + index
                 if (targetIndex < vectorSize) {
                     vector[targetIndex] = 1f
+                    matchedFeatures.add("Intent: $feature")
                 }
             }
         }
         
-        return vector
+        return FeatureAnalysisResult(vector, matchedFeatures)
     }
 
     private fun loadJSONFromAsset(filename: String): String {

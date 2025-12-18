@@ -8,6 +8,22 @@ class HeuristicEngine:
             "com.spyware.tracker"
         ]
         
+        allow_list = [
+            "com.android.chrome",
+            "com.google.android.apps.maps",
+            "com.whatsapp"
+        ]
+
+        # Rule 0: Global Allowlist (False Positive Mitigation)
+        if metadata.package_name in allow_list:
+            return ScanResult(
+                package_name=metadata.package_name,
+                risk_level=RiskLevel.SAFE,
+                threat_type="",
+                description="Verified safe package via Cloud Allowlist.",
+                heuristics_used=["Allowlist"]
+            )
+        
         # Rule 1: Known Bad Packages
         if metadata.package_name in known_malware:
             return ScanResult(
