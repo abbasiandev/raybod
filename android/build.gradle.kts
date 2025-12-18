@@ -6,12 +6,11 @@ plugins {
     alias(libs.plugins.hilt) apply false
 }
 
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+            // Use freeCompilerArgs if needed for modular access
+        }
     }
 }

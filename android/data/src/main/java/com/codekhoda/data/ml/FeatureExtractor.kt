@@ -3,7 +3,8 @@ package com.codekhoda.data.ml
 import android.content.Context
 import com.codekhoda.domain.model.AppPackage
 import dagger.hilt.android.qualifiers.ApplicationContext
-import org.json.JSONObject
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import java.io.InputStream
 import java.nio.charset.Charset
 import javax.inject.Inject
@@ -20,27 +21,25 @@ class FeatureExtractor @Inject constructor(
 
     init {
         val json = loadJSONFromAsset("features.json")
-        val jsonObject = JSONObject(json)
+        var pList = mutableListOf<String>()
+        var iList = mutableListOf<String>()
         
-        val permissionsArray = jsonObject.getJSONArray("permissions")
-        val intentsArray = jsonObject.getJSONArray("intents")
-        
-        val pList = mutableListOf<String>()
-        for (i in 0 until permissionsArray.length()) {
-            pList.add(permissionsArray.getString(i))
-        }
-        
-        val iList = mutableListOf<String>()
-        for (i in 0 until intentsArray.length()) {
-            iList.add(intentsArray.getString(i))
+        try {
+            val gson = Gson()
+            val type = object : TypeToken<Map<String, List<String>>>() {}.type
+            val data: Map<String, List<String>> = gson.fromJson(json, type)
+            
+            pList = data["permissions"]?.toMutableList() ?: mutableListOf()
+            iList = data["intents"]?.toMutableList() ?: mutableListOf()
+            
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         
         permissionFeatures = pList
         intentFeatures = iList
         
-        // Ensure vector size matches model expectation (usually 2000 based on reference, but we pad/truncate if needed?)
-        // The reference model seems to expect a specific size. 
-        // Based on reference code `float[] inputVal = new float[2000];`
+        // Ensure vector size matches model expectation
         vectorSize = 2000
     }
 
@@ -51,7 +50,9 @@ class FeatureExtractor @Inject constructor(
         // Reference uses direct index mapping
         permissionFeatures.forEachIndexed { index, feature ->
             if (appPackage.permissions.contains(feature)) {
-                vector[index] = 1f
+                if (index < vectorSize) {
+                    vector[index] = 1f
+                }
             }
         }
         

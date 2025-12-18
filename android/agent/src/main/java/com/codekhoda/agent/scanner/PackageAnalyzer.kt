@@ -4,15 +4,17 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.codekhoda.domain.model.AppPackage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.security.MessageDigest
 
 class PackageAnalyzer(private val context: Context) {
 
-    fun getInstalledApps(): List<AppPackage> {
+    suspend fun getInstalledApps(): List<AppPackage> = withContext(Dispatchers.IO) {
         val pm = context.packageManager
         val packages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNATURES)
         
-        return packages.map { pkg ->
+        packages.map { pkg ->
             convertPackageInfo(pkg)
         }
     }

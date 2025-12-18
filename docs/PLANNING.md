@@ -48,7 +48,14 @@ We deploy a **Practical AI** approach:
 - [x] Implement **ThreatRepository** with local shadowing.
 - [x] Room caching for offline-first protection.
 
-### Phase 2: On-Device AI Integration (The Core Win) �
+### Phase 1.5: Test Infrastructure ✅
+- [x] **Backend Tests**: 56 pytest tests for API, heuristics, and schemas.
+- [x] **Domain Tests**: Unit tests for models, enums, and use cases.
+- [x] **Data Tests**: Repository, mapper, DTO, and ML score interpretation tests.
+- [x] **Presentation Tests**: ViewModel lifecycle and state management tests.
+- [x] See [TESTING.md](./TESTING.md) for full documentation.
+
+### Phase 2: On-Device AI Integration (The Core Win) 🔄
 - [ ] **Asset Integration**: Import `saved_model.tflite` and `features.json` from reference architecture.
 - [ ] **Feature Extractor**: Implement `PackageInfo` -> `FloatArray` converter (The "DNA" Extractor).
 - [ ] **TFLite Service**: Create a robust `MalwareScanner` class wrapping the interpreter.

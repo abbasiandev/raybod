@@ -1,19 +1,28 @@
 package com.codekhoda.agent.service
 
-import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.codekhoda.agent.scanner.PackageAnalyzer
+import com.codekhoda.domain.usecase.ScanAppUseCase
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SentinelService : Service() {
+
+    @Inject
+    lateinit var scanAppUseCase: ScanAppUseCase
+
+    @Inject
+    lateinit var packageAnalyzer: PackageAnalyzer
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
@@ -24,8 +33,11 @@ class SentinelService : Service() {
         startForegroundService()
         
         scope.launch {
-            // TODO: Inject Use Case and run scan
-            // scanApps()
+            val apps = packageAnalyzer.getInstalledApps()
+            apps.forEach { app ->
+                // This will use On-Device AI first then Cloud if needed
+                scanAppUseCase(app)
+            }
         }
         
         return START_STICKY

@@ -42,7 +42,7 @@ object DataModule {
     @Singleton
     fun provideRetrofit(): retrofit2.Retrofit {
         return retrofit2.Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8000/") // Localhost for Android Emulator
+            .baseUrl("https://codekhoda-sentinel-brain.liara.run/") // Live Liara Backend
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()
     }
