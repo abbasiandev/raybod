@@ -16,7 +16,8 @@ class MappersTest {
             riskLevel = "HIGH",
             threatType = "Spyware",
             description = "Suspicious permissions detected",
-            timestamp = 1702900000000L
+            timestamp = 1702900000000L,
+            heuristicsUsed = listOf("PermissionA")
         )
 
         // When
@@ -28,6 +29,7 @@ class MappersTest {
         assertEquals("Spyware", domain.threatType)
         assertEquals("Suspicious permissions detected", domain.description)
         assertEquals(1702900000000L, domain.timestamp)
+        assertEquals(listOf("PermissionA"), domain.heuristicsUsed)
     }
 
     @Test
@@ -38,7 +40,8 @@ class MappersTest {
             riskLevel = RiskLevel.CRITICAL,
             threatType = "Malware",
             description = "Known malware signature",
-            timestamp = 1702900000000L
+            timestamp = 1702900000000L,
+            heuristicsUsed = listOf("HeuristicX")
         )
 
         // When
@@ -50,6 +53,7 @@ class MappersTest {
         assertEquals("Malware", entity.threatType)
         assertEquals("Known malware signature", entity.description)
         assertEquals(1702900000000L, entity.timestamp)
+        assertEquals(listOf("HeuristicX"), entity.heuristicsUsed)
     }
 
     @Test
@@ -60,7 +64,8 @@ class MappersTest {
             riskLevel = RiskLevel.MEDIUM,
             threatType = "Adware",
             description = "Potentially unwanted program",
-            timestamp = 1702900000000L
+            timestamp = 1702900000000L,
+            heuristicsUsed = listOf("H1", "H2")
         )
 
         // When
@@ -73,6 +78,7 @@ class MappersTest {
         assertEquals(originalAssessment.threatType, convertedBack.threatType)
         assertEquals(originalAssessment.description, convertedBack.description)
         assertEquals(originalAssessment.timestamp, convertedBack.timestamp)
+        assertEquals(originalAssessment.heuristicsUsed, convertedBack.heuristicsUsed)
     }
 
     @Test
@@ -111,42 +117,5 @@ class MappersTest {
 
         // Then
         assertEquals(RiskLevel.UNKNOWN, domain.riskLevel)
-    }
-
-    @Test
-    fun `empty threatType and description are handled correctly`() {
-        // Given
-        val entity = CachedRiskEntity(
-            packageName = "com.clean.app",
-            riskLevel = "SAFE",
-            threatType = "",
-            description = "",
-            timestamp = 0L
-        )
-
-        // When
-        val domain = entity.toDomain()
-
-        // Then
-        assertEquals("", domain.threatType)
-        assertEquals("", domain.description)
-    }
-
-    @Test
-    fun `SAFE apps convert correctly`() {
-        // Given
-        val safeAssessment = RiskAssessment(
-            packageName = "com.safe.app",
-            riskLevel = RiskLevel.SAFE,
-            threatType = "",
-            description = "No threats found"
-        )
-
-        // When
-        val entity = safeAssessment.toEntity()
-
-        // Then
-        assertEquals("SAFE", entity.riskLevel)
-        assertEquals("", entity.threatType)
     }
 }

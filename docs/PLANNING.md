@@ -1,5 +1,7 @@
 # 🦅 Project Sentinel: Strategic & Architectural Blueprint
 
+> **Version**: 1.1.0 | **Last Updated**: 2024-12-19 | **Status**: All Core Phases Complete
+
 This document serves as the single source of truth for the **Hybrid Cloud Sentinel** project. It outlines the strategic mandate, system architecture, and the phased implementation roadmap to deliver a next-generation mobile threat defense platform.
 
 ---
@@ -35,13 +37,47 @@ Our response is **"Practical AI"**:
 
 ## 2.0 System Architecture Blueprint
 
-### 2.1 On-Device Agent: The "Sentinel Brain"
+### 2.1 Architecture Overview
+
+```mermaid
+flowchart TB
+    subgraph Android["📱 Android App"]
+        direction TB
+        UI["🎨 Presentation<br/>ScanScreen, ThreatDetails"]
+        Domain["🧠 Domain<br/>ScanAppUseCase"]
+        Data["💾 Data<br/>ThreatRepositoryImpl"]
+        Agent["🛡️ Agent<br/>SentinelService"]
+        
+        subgraph ML["🤖 ML Engine"]
+            FE["FeatureExtractor"]
+            TF["TFLite Model"]
+        end
+    end
+    
+    subgraph Cloud["☁️ Cloud Backend"]
+        API["FastAPI"]
+        HE["HeuristicEngine"]
+        AL["Global Allowlist"]
+    end
+    
+    UI --> Domain --> Data
+    Agent --> Data
+    Data --> ML
+    Data <--> API
+    API --> HE --> AL
+    
+    style Android fill:#1a1a2e,stroke:#00ff87,stroke-width:2px
+    style Cloud fill:#1a1a2e,stroke:#ff006e,stroke-width:2px
+    style ML fill:#16213e,stroke:#00d4ff,stroke-width:2px
+```
+
+### 2.2 On-Device Agent: The "Sentinel Brain"
 Autonomous, real-time threat detection.
 *   **Feature Extractor**: Static analysis of `AndroidManifest.xml` & bytecode. Generates a binary feature vector (DNA) based on risky permissions/intents (inspired by Drebin).
 *   **Inference Engine**: Optimized **TensorFlow Lite** model (`saved_model.tflite`). Input: Feature Vector -> Output: Risk Score (0.0 - 1.0).
 *   **Verdict System**: Maps Risk Score to **Safe**, **Risky**, or **Malware**.
 
-### 2.2 Cloud Infrastructure: The Global Intelligence Hub
+### 2.3 Cloud Infrastructure: The Global Intelligence Hub
 Python FastAPI backend acting as a force multiplier.
 *   **Crowdsourced Intelligence**: Aggregates anonymized threat metadata.
 *   **False Positive Mitigation**: "Global Allowlist" API to verify risky verdicts.
@@ -49,38 +85,84 @@ Python FastAPI backend acting as a force multiplier.
 
 ---
 
-## 3.0 Enriched Implementation Roadmap
+## 3.0 Implementation Roadmap
 
-### Phase 0-2: Foundational Layers & Core AI Engine (Completed)
+### Phase 0-2: Foundational Layers & Core AI Engine ✅
 Established the technical bedrock and on-device detection.
 - [x] **Project & Backend Setup**: Android multi-module + Python FastAPI skeleton.
 - [x] **Test Infrastructure**: Comprehensive coverage for Domain, Data, and Presentation layers.
 - [x] **On-Device AI Integration**: `saved_model.tflite` integration, "DNA" Feature Extractor with Explainability, and TFLite Service.
 
-### Phase 3: Real-Time Protection (Completed)
+### Phase 3: Real-Time Protection ✅
 Transforming from on-demand to always-on.
 - [x] **Develop SentinelService**: Foreground service listening for `PACKAGE_ADDED`.
 - [x] **Implement Instant Alerting**: Notifications for "Scanning..." and "Threat Detected!".
 - [x] **Optimize Performance**: Enforce < 500ms execution budget via efficient signature hashing and resource parsing.
 
-### Phase 4: UI/UX & Threat Visualization (Completed)
+### Phase 4: UI/UX & Threat Visualization ✅
 Building trust through transparency and aesthetics.
 - [x] **Radar Dashboard**: Visualize the scanning process (Scanning -> Feature Extraction -> Verdict).
 - [x] **Threat Details View**: Explainability - Show **WHY** an app was flagged (e.g., "Requests SMS + Camera").
-- [x] **Cyberpunk Polish**: Apply "Hacker/Cyberpunk" design system (Neon colors, dark mode, glich effects).
+- [x] **Cyberpunk Polish**: Apply "Hacker/Cyberpunk" design system (Neon colors, dark mode, glitch effects).
 
-### Phase 5: Cloud Connector & Hybrid Intelligence (Completed)
+### Phase 5: Cloud Connector & Hybrid Intelligence ✅
 Activating the hybrid network effects.
 - [x] **Enable Metadata Upload**: Send anonymized threat signatures to the cloud.
 - [x] **Integrate Global Allowlist API**: Check "Risky" verdicts against the cloud allowlist.
 
 ---
 
-## 4.0 Definition of Done & Success Metrics
+### Phase 6: OTA Model Updates (Planned)
+Enabling continuous improvement of detection capabilities.
+- [ ] **Implement Model Versioning**: Track `.tflite` model versions on-device.
+- [ ] **Secure Model Delivery**: Signed model downloads with integrity verification.
+- [ ] **Background Model Sync**: Periodic checks for updated models via WorkManager.
+
+### Phase 7: Analytics Dashboard (Planned)
+Providing actionable intelligence to users and administrators.
+- [ ] **Threat Trends Visualization**: Historical scan data and threat patterns.
+- [ ] **Device Fleet Overview**: Aggregate statistics for enterprise deployments.
+- [ ] **Export & Reporting**: PDF/CSV reports for compliance requirements.
+
+### Phase 8: Enterprise Features (Planned)
+Scaling to organizational deployments.
+- [ ] **MDM Integration**: Support for major MDM platforms (Intune, Jamf, etc.).
+- [ ] **Policy Engine**: Configurable scan policies and response actions.
+- [ ] **Compliance Reporting**: SOC2, GDPR, and HIPAA audit trails.
+
+---
+
+## 4.0 Technical Debt & Known Limitations
+
+> [!NOTE]
+> Tracking known limitations ensures transparency and guides future improvements.
+
+| Item | Impact | Priority |
+| :--- | :--- | :--- |
+| Backend allowlist is hardcoded | Limited scalability | Medium |
+| No rate limiting on `/api/v1/scan/analyze` | Potential DoS vulnerability | High |
+| Model retraining pipeline not automated | Manual ML updates | Medium |
+| No offline queue for failed cloud requests | Data loss on network failure | Low |
+
+---
+
+## 5.0 Project Metrics
+
+| Metric | Value |
+| :--- | :--- |
+| **Android Test Classes** | 15+ |
+| **Backend Test Files** | 5 |
+| **Android Modules** | 6 (app, agent, core, data, domain, presentation) |
+| **API Endpoints** | 1 (scan/analyze) |
+| **TFLite Model Size** | ~500KB |
+
+---
+
+## 6.0 Definition of Done & Success Criteria
 
 | Criterion | Metric | Strategic Justification |
 | :--- | :--- | :--- |
 | **AI-Powered** | Detection driven solely by `.tflite` output (mocked in tests). | Validates the core "Practical AI" value proposition. |
 | **Responsive** | UI never blocks. Background scan < 500ms. | Mitigates battery drain constraints and ensures retention. |
 | **Accurate** | Correctly flags test virus (EICAR) as Malware. | Proves effective end-to-end detection. |
-| **Beautiful** | Adheres to "Cyberpunk/Hacker" aesthetic. | key differentiator; builds brand identity. |
+| **Beautiful** | Adheres to "Cyberpunk/Hacker" aesthetic. | Key differentiator; builds brand identity. |

@@ -83,3 +83,4 @@ class TestSettings:
         assert "DEBUG" in settings_dict
         assert "PORT" in settings_dict
         assert "HOST" in settings_dict
+

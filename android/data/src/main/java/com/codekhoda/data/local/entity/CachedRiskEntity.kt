@@ -10,5 +10,6 @@ data class CachedRiskEntity(
     val riskLevel: String, // Stored as Enum name
     val threatType: String,
     val description: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val heuristicsUsed: List<String> = emptyList()
 )

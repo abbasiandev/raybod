@@ -10,7 +10,8 @@ fun CachedRiskEntity.toDomain(): RiskAssessment {
         riskLevel = try { RiskLevel.valueOf(this.riskLevel) } catch (e: Exception) { RiskLevel.UNKNOWN },
         threatType = this.threatType,
         description = this.description,
-        timestamp = this.timestamp
+        timestamp = this.timestamp,
+        heuristicsUsed = this.heuristicsUsed
     )
 }
 
@@ -20,6 +21,7 @@ fun RiskAssessment.toEntity(): CachedRiskEntity {
         riskLevel = this.riskLevel.name,
         threatType = this.threatType,
         description = this.description,
-        timestamp = this.timestamp
+        timestamp = this.timestamp,
+        heuristicsUsed = this.heuristicsUsed
     )
 }

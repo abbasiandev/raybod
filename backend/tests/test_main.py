@@ -82,3 +82,4 @@ class TestAppConfiguration:
         # Check if scan tag exists in routes
         scan_routes = [route for route in app.routes if hasattr(route, "tags") and "scan" in route.tags]
         assert len(scan_routes) > 0
+
