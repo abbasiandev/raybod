@@ -68,3 +68,6 @@ google-services.json
 # Temp files
 tmp/
 temp/
+
+# Data
+*.db
