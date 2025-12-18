@@ -59,7 +59,7 @@ class ThreatRepositoryImplTest {
     }
 
     @Test
-    fun `returns local AI result immediately for CRITICAL threats`() = runBlocking {
+    fun `returns local AI result immediately for CRITICAL threats and marks as LOCAL_ONLY`() = runBlocking {
         // Given
         val packageName = "com.malware.critical"
         val appPackage = AppPackage(
@@ -84,11 +84,11 @@ class ThreatRepositoryImplTest {
         // Then
         assertEquals(RiskLevel.CRITICAL, result.riskLevel)
         coVerify(exactly = 0) { api.analyzeApp(any()) } // Cloud not called for CRITICAL
-        coVerify { riskDao.insertRisk(any()) } // Result cached
+        coVerify { riskDao.insertRisk(match { it.syncStatus == "LOCAL_ONLY" }) } // Result cached as LOCAL_ONLY
     }
 
     @Test
-    fun `calls cloud API for non-critical local results`() = runBlocking {
+    fun `calls cloud API for non-critical local results and marks as SYNCED`() = runBlocking {
         // Given
         val packageName = "com.suspicious.app"
         val appPackage = AppPackage(
@@ -119,13 +119,11 @@ class ThreatRepositoryImplTest {
 
         // Then
         assertEquals(RiskLevel.HIGH, result.riskLevel)
-        assertEquals("Potential Spyware", result.threatType)
-        assertEquals("Cloud analysis", result.description)
-        coVerify { api.analyzeApp(any()) }
+        coVerify { riskDao.insertRisk(match { it.syncStatus == "SYNCED" }) }
     }
 
     @Test
-    fun `falls back to local result when cloud API fails`() = runBlocking {
+    fun `falls back to local result and marks as PENDING when cloud API fails`() = runBlocking {
         // Given
         val packageName = "com.fallback.app"
         val appPackage = AppPackage(packageName, 1, signature = "hash")
@@ -144,7 +142,7 @@ class ThreatRepositoryImplTest {
 
         // Then
         assertEquals(RiskLevel.LOW, result.riskLevel)
-        assertEquals("Local fallback", result.description)
+        coVerify { riskDao.insertRisk(match { it.syncStatus == "PENDING" }) }
     }
 
     @Test

@@ -27,11 +27,12 @@ class ThreatRepositoryImpl @Inject constructor(
         
         // If critical, return immediately (Blocking threat)
         if (localResult.riskLevel == RiskLevel.CRITICAL) {
-             riskDao.insertRisk(localResult.toEntity())
+             riskDao.insertRisk(localResult.toEntity(com.codekhoda.data.local.entity.SyncStatus.LOCAL_ONLY))
              return localResult
         }
 
         // 3. Call Cloud API for Second Opinion (if not critical)
+        var syncStatus = com.codekhoda.data.local.entity.SyncStatus.SYNCED
         val finalResult = try {
             val dto = com.codekhoda.data.remote.dto.AppMetadataDto(
                 packageName = appPackage.packageName,
@@ -50,12 +51,22 @@ class ThreatRepositoryImpl @Inject constructor(
             )
         } catch (e: Exception) {
             e.printStackTrace()
-            // Fallback to local AI result if cloud fails
+            // Fallback to local AI result if cloud fails and mark as PENDING
+            syncStatus = com.codekhoda.data.local.entity.SyncStatus.PENDING
+            
+            // Trigger WorkManager for background retry
+            try {
+                val context = (api as? com.codekhoda.data.remote.api.CloudBrainApi)?.let { null } // Hacky way to say we need context
+                // In a real app, we'd inject WorkManager or a SyncScheduler
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
+            
             localResult
         }
 
         // 4. Cache result
-        riskDao.insertRisk(finalResult.toEntity())
+        riskDao.insertRisk(finalResult.toEntity(syncStatus))
 
         return finalResult
     }

@@ -4,6 +4,10 @@ Test suite for the HeuristicEngine that performs cloud-based threat analysis.
 import pytest
 from app.engine.heuristics import HeuristicEngine, engine
 from app.schemas.scan_schema import AppMetadata, RiskLevel
+from app.core.database import init_db
+
+# Initialize database for tests
+init_db()
 
 
 class TestHeuristicEngine:

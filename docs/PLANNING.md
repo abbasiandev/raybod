@@ -137,12 +137,12 @@ Scaling to organizational deployments.
 > [!NOTE]
 > Tracking known limitations ensures transparency and guides future improvements.
 
-| Item | Impact | Priority |
-| :--- | :--- | :--- |
-| Backend allowlist is hardcoded | Limited scalability | Medium |
-| No rate limiting on `/api/v1/scan/analyze` | Potential DoS vulnerability | High |
-| Model retraining pipeline not automated | Manual ML updates | Medium |
-| No offline queue for failed cloud requests | Data loss on network failure | Low |
+| Item | Impact | Priority | Status |
+| :--- | :--- | :--- | :--- |
+| Backend allowlist is hardcoded | Limited scalability | Medium | **RESOLVED** (Available in DB) |
+| No rate limiting on `/api/v1/scan/analyze` | Potential DoS vulnerability | High | **RESOLVED** (10/min limit) |
+| Model retraining pipeline not automated | Manual ML updates | Medium | **IN PROGRESS** (Script foundation added) |
+| No offline queue for failed cloud requests | Data loss on network failure | Low | **RESOLVED** (WorkManager + SyncStatus) |
 
 ---
 

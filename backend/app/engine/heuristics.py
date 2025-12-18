@@ -1,38 +1,34 @@
 from app.schemas.scan_schema import AppMetadata, ScanResult, RiskLevel
+from app.core.database import SessionLocal, AllowlistEntry, BlocklistEntry
 
 class HeuristicEngine:
     
     def analyze(self, metadata: AppMetadata) -> ScanResult:
-        known_malware = [
-            "com.example.virus",
-            "com.spyware.tracker"
-        ]
-        
-        allow_list = [
-            "com.android.chrome",
-            "com.google.android.apps.maps",
-            "com.whatsapp"
-        ]
-
-        # Rule 0: Global Allowlist (False Positive Mitigation)
-        if metadata.package_name in allow_list:
-            return ScanResult(
-                package_name=metadata.package_name,
-                risk_level=RiskLevel.SAFE,
-                threat_type="",
-                description="Verified safe package via Cloud Allowlist.",
-                heuristics_used=["Allowlist"]
-            )
-        
-        # Rule 1: Known Bad Packages
-        if metadata.package_name in known_malware:
-            return ScanResult(
-                package_name=metadata.package_name,
-                risk_level=RiskLevel.CRITICAL,
-                threat_type="Known Malware",
-                description="This package is in our global blocklist.",
-                heuristics_used=["Blocklist"]
-            )
+        db = SessionLocal()
+        try:
+            # Rule 0: Global Allowlist (False Positive Mitigation)
+            allowed = db.query(AllowlistEntry).filter(AllowlistEntry.package_name == metadata.package_name).first()
+            if allowed:
+                return ScanResult(
+                    package_name=metadata.package_name,
+                    risk_level=RiskLevel.SAFE,
+                    threat_type="",
+                    description="Verified safe package via Cloud Allowlist.",
+                    heuristics_used=["Allowlist"]
+                )
+            
+            # Rule 1: Known Bad Packages
+            blocked = db.query(BlocklistEntry).filter(BlocklistEntry.package_name == metadata.package_name).first()
+            if blocked:
+                return ScanResult(
+                    package_name=metadata.package_name,
+                    risk_level=RiskLevel.CRITICAL,
+                    threat_type=blocked.threat_type,
+                    description="This package is in our global blocklist.",
+                    heuristics_used=["Blocklist"]
+                )
+        finally:
+            db.close()
             
         # Rule 2: Suspicious Permission Combinations
         dangerous_perms = {
