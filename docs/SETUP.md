@@ -178,7 +178,11 @@ ALLOWED_ORIGINS=*
 sdk.dir=/path/to/your/Android/Sdk
 
 # Cloud Brain Configuration
-cloud.brain.url=http://10.0.2.2:8000
+# For local development (Emulator):
+# cloud.brain.url=http://10.0.2.2:8000
+
+# For production (Liara):
+cloud.brain.url=https://codekhoda-sentinel-brain.liara.run
 cloud.brain.api.version=v1
 ```
 
@@ -217,11 +221,15 @@ INFO:     Application startup complete.
 ### Step 2: Verify Backend
 
 ```bash
-# Health endpoint
+# Health endpoint (Local)
 curl http://localhost:8000/health
 
+# Health endpoint (Production)
+curl https://codekhoda-sentinel-brain.liara.run/health
+
 # API documentation
-open http://localhost:8000/docs
+# Local: http://localhost:8000/docs
+# Production: https://codekhoda-sentinel-brain.liara.run/docs
 ```
 
 ### Step 3: Run Android App

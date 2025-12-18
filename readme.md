@@ -7,6 +7,8 @@
 ![Backend](https://img.shields.io/badge/backend-Python%20FastAPI-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-purple.svg)
 
+![Live API](https://img.shields.io/badge/API-Live-success)
+
 **"The smartphone is too weak to fight alone. We brought the brain to the cloud."**
 
 *A next-generation mobile security solution that offloads complex threat analysis to a centralized "Cloud Brain"*
@@ -99,8 +101,9 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-*Server runs at `http://127.0.0.1:8000`*  
-*API Documentation available at `http://127.0.0.1:8000/docs`*
+*Local Server runs at `http://127.0.0.1:8000`*  
+*Production API available at `https://codekhoda-sentinel-brain.liara.run`*  
+*API Documentation: [Local](http://127.0.0.1:8000/docs) | [Production](https://codekhoda-sentinel-brain.liara.run/docs)*
 
 ### 3. Run the Android App
 
@@ -109,7 +112,11 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 3. Configure the Cloud Brain URL in your local properties:
    ```properties
    # android/local.properties
-   cloud.brain.url=http://10.0.2.2:8000
+   # For local development (Emulator):
+   # cloud.brain.url=http://10.0.2.2:8000
+   
+   # For production (Liara):
+   cloud.brain.url=https://codekhoda-sentinel-brain.liara.run
    ```
 4. Build & Run the `:app` module on an emulator or device
 
