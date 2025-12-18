@@ -1,0 +1,70 @@
+# Project Specific
+references/
+samples/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.iml
+*.iws
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build and Dependencies
+node_modules/
+dist/
+build/
+bin/
+obj/
+out/
+.gradle/
+target/
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.installed.cfg
+.eggs/
+
+# Android Specific
+/captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+**/local.properties
+**/android/local.properties
+/android/build/
+/android/.gradle/
+secrets.properties
+secrets.xml
+google-services.json
+*.jks
+*.keystore
+
+# Logs
+*.log
+
+# Temp files
+tmp/
+temp/
