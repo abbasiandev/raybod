@@ -265,3 +265,23 @@ class TestResponseFormat:
 
         valid_levels = [level.value for level in RiskLevel]
         assert data["risk_level"] in valid_levels
+
+    def test_exception_handling_returns_500(self, client, monkeypatch):
+        """Exception in engine should return 500 error."""
+        def mock_analyze(*args, **kwargs):
+            raise RuntimeError("Engine failure")
+        
+        from app.engine import heuristics
+        monkeypatch.setattr(heuristics.engine, "analyze", mock_analyze)
+        
+        payload = {
+            "package_name": "com.test.error",
+            "version_code": 1,
+            "signature": "hash",
+            "permissions": []
+        }
+        
+        response = client.post("/api/v1/scan/analyze", json=payload)
+        
+        assert response.status_code == 500
+        assert "error" in response.json()["detail"].lower() or "failure" in response.json()["detail"].lower()

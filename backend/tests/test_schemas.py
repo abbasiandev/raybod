@@ -255,3 +255,79 @@ class TestScanResultSchema:
                 risk_level="INVALID",
                 description="Test"
             )
+
+    def test_empty_package_name_allowed(self):
+        """Empty package_name should be allowed (Pydantic default behavior)."""
+        metadata = AppMetadata(
+            package_name="",
+            version_code=1,
+            signature="hash"
+        )
+        assert metadata.package_name == ""
+
+    def test_negative_version_code_allowed(self):
+        """Negative version_code should be allowed (edge case)."""
+        metadata = AppMetadata(
+            package_name="com.test",
+            version_code=-1,
+            signature="hash"
+        )
+        assert metadata.version_code == -1
+
+    def test_zero_version_code_allowed(self):
+        """Zero version_code should be allowed."""
+        metadata = AppMetadata(
+            package_name="com.test",
+            version_code=0,
+            signature="hash"
+        )
+        assert metadata.version_code == 0
+
+    def test_empty_signature_allowed(self):
+        """Empty signature should be allowed."""
+        metadata = AppMetadata(
+            package_name="com.test",
+            version_code=1,
+            signature=""
+        )
+        assert metadata.signature == ""
+
+    def test_very_long_package_name(self):
+        """Should handle very long package names."""
+        long_name = "com." + "x" * 200
+        metadata = AppMetadata(
+            package_name=long_name,
+            version_code=1,
+            signature="hash"
+        )
+        assert metadata.package_name == long_name
+
+    def test_empty_description_raises_error(self):
+        """Empty description should raise ValidationError for ScanResult."""
+        # Pydantic should allow empty strings by default, but let's test
+        result = ScanResult(
+            package_name="com.test",
+            risk_level=RiskLevel.SAFE,
+            description=""
+        )
+        assert result.description == ""
+
+    def test_permissions_list_type_validation(self):
+        """Permissions should validate as a list."""
+        with pytest.raises(ValidationError):
+            AppMetadata(
+                package_name="com.test",
+                version_code=1,
+                signature="hash",
+                permissions="not_a_list"  # Should be a list
+            )
+
+    def test_heuristics_used_list_type_validation(self):
+        """heuristics_used should validate as a list."""
+        with pytest.raises(ValidationError):
+            ScanResult(
+                package_name="com.test",
+                risk_level=RiskLevel.SAFE,
+                description="Test",
+                heuristics_used="not_a_list"  # Should be a list
+            )

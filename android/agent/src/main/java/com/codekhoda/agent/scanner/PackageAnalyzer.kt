@@ -19,6 +19,16 @@ class PackageAnalyzer(private val context: Context) {
         }
     }
 
+    suspend fun analyzePackage(packageName: String): AppPackage? = withContext(Dispatchers.IO) {
+        try {
+            val pm = context.packageManager
+            val pkg = pm.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNATURES)
+            convertPackageInfo(pkg)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private fun convertPackageInfo(pkg: PackageInfo): AppPackage {
         val permissions = pkg.requestedPermissions?.toList() ?: emptyList()
         val signature = getSignature(pkg)

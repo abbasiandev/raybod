@@ -218,6 +218,187 @@ class TestHeuristicEngine:
         # Only 2 dangerous permissions, should be SAFE
         assert result.risk_level == RiskLevel.SAFE
 
+    def test_exactly_three_dangerous_permissions_boundary(self, heuristic_engine):
+        """Exactly 3 dangerous permissions should trigger HIGH risk (boundary condition)."""
+        metadata = AppMetadata(
+            package_name="com.boundary.test",
+            version_code=1,
+            signature="hash",
+            permissions=[
+                "android.permission.CAMERA",
+                "android.permission.RECORD_AUDIO",
+                "android.permission.ACCESS_FINE_LOCATION"
+            ]
+        )
+
+        result = heuristic_engine.analyze(metadata)
+
+        assert result.risk_level == RiskLevel.HIGH
+        assert result.threat_type == "Potential Spyware"
+        assert len([p for p in metadata.permissions if p in {
+            "android.permission.CAMERA",
+            "android.permission.RECORD_AUDIO",
+            "android.permission.ACCESS_FINE_LOCATION",
+            "android.permission.READ_SMS"
+        }]) == 3
+
+    def test_all_four_dangerous_permissions(self, heuristic_engine):
+        """All four dangerous permissions should return HIGH risk."""
+        metadata = AppMetadata(
+            package_name="com.all.dangerous",
+            version_code=1,
+            signature="hash",
+            permissions=[
+                "android.permission.CAMERA",
+                "android.permission.RECORD_AUDIO",
+                "android.permission.ACCESS_FINE_LOCATION",
+                "android.permission.READ_SMS"
+            ]
+        )
+
+        result = heuristic_engine.analyze(metadata)
+
+        assert result.risk_level == RiskLevel.HIGH
+        assert result.threat_type == "Potential Spyware"
+        assert "CAMERA" in result.description
+        assert "RECORD_AUDIO" in result.description
+        assert "ACCESS_FINE_LOCATION" in result.description
+        assert "READ_SMS" in result.description
+
+    def test_duplicate_dangerous_permissions(self, heuristic_engine):
+        """Duplicate dangerous permissions should still count as distinct for threshold."""
+        metadata = AppMetadata(
+            package_name="com.duplicate.test",
+            version_code=1,
+            signature="hash",
+            permissions=[
+                "android.permission.CAMERA",
+                "android.permission.CAMERA",  # Duplicate
+                "android.permission.RECORD_AUDIO",
+                "android.permission.ACCESS_FINE_LOCATION"
+            ]
+        )
+
+        result = heuristic_engine.analyze(metadata)
+
+        # Should still be HIGH because we have 3 unique dangerous permissions
+        assert result.risk_level == RiskLevel.HIGH
+        assert result.threat_type == "Potential Spyware"
+
+    def test_malware_with_dangerous_permissions(self, heuristic_engine):
+        """Known malware should be CRITICAL even with dangerous permissions."""
+        metadata = AppMetadata(
+            package_name="com.example.virus",
+            version_code=1,
+            signature="hash",
+            permissions=[
+                "android.permission.CAMERA",
+                "android.permission.RECORD_AUDIO",
+                "android.permission.ACCESS_FINE_LOCATION"
+            ]
+        )
+
+        result = heuristic_engine.analyze(metadata)
+
+        # Blocklist should take priority
+        assert result.risk_level == RiskLevel.CRITICAL
+        assert result.threat_type == "Known Malware"
+        assert "Blocklist" in result.heuristics_used
+
+    def test_case_sensitivity_package_name(self, heuristic_engine):
+        """Package name matching should be case-sensitive."""
+        metadata = AppMetadata(
+            package_name="COM.EXAMPLE.VIRUS",  # Uppercase version
+            version_code=1,
+            signature="hash",
+            permissions=[]
+        )
+
+        result = heuristic_engine.analyze(metadata)
+
+        # Should be SAFE because case doesn't match
+        assert result.risk_level == RiskLevel.SAFE
+
+    def test_permission_case_sensitivity(self, heuristic_engine):
+        """Permission matching should be case-sensitive."""
+        metadata = AppMetadata(
+            package_name="com.case.test",
+            version_code=1,
+            signature="hash",
+            permissions=[
+                "android.permission.camera",  # Lowercase
+                "android.permission.RECORD_AUDIO",
+                "android.permission.ACCESS_FINE_LOCATION"
+            ]
+        )
+
+        result = heuristic_engine.analyze(metadata)
+
+        # Should be SAFE because lowercase permission doesn't match
+        assert result.risk_level == RiskLevel.SAFE
+
+    def test_result_structure_completeness(self, heuristic_engine):
+        """Result should have all required fields with proper types."""
+        metadata = AppMetadata(
+            package_name="com.structure.test",
+            version_code=1,
+            signature="hash",
+            permissions=[]
+        )
+
+        result = heuristic_engine.analyze(metadata)
+
+        assert hasattr(result, "package_name")
+        assert hasattr(result, "risk_level")
+        assert hasattr(result, "threat_type")
+        assert hasattr(result, "description")
+        assert hasattr(result, "heuristics_used")
+        
+        assert isinstance(result.package_name, str)
+        assert isinstance(result.risk_level, RiskLevel)
+        assert isinstance(result.threat_type, str)
+        assert isinstance(result.description, str)
+        assert isinstance(result.heuristics_used, list)
+
+    def test_heuristics_used_content(self, heuristic_engine):
+        """Heuristics_used should contain meaningful values."""
+        # Test for blocklist
+        malware_metadata = AppMetadata(
+            package_name="com.example.virus",
+            version_code=1,
+            signature="hash",
+            permissions=[]
+        )
+        malware_result = heuristic_engine.analyze(malware_metadata)
+        assert len(malware_result.heuristics_used) > 0
+        assert "Blocklist" in malware_result.heuristics_used
+
+        # Test for permission combo
+        perm_metadata = AppMetadata(
+            package_name="com.perms.test",
+            version_code=1,
+            signature="hash",
+            permissions=[
+                "android.permission.CAMERA",
+                "android.permission.RECORD_AUDIO",
+                "android.permission.ACCESS_FINE_LOCATION"
+            ]
+        )
+        perm_result = heuristic_engine.analyze(perm_metadata)
+        assert len(perm_result.heuristics_used) > 0
+        assert "PermissionCombo" in perm_result.heuristics_used
+
+        # Test for clean
+        clean_metadata = AppMetadata(
+            package_name="com.clean.test",
+            version_code=1,
+            signature="hash",
+            permissions=[]
+        )
+        clean_result = heuristic_engine.analyze(clean_metadata)
+        assert len(clean_result.heuristics_used) > 0
+        assert "Clean" in clean_result.heuristics_used
+
 
 class TestGlobalEngineInstance:
     """Tests for the module-level engine instance."""
