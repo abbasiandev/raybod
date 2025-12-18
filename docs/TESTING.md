@@ -12,20 +12,21 @@ This document describes the comprehensive test suite for the Hybrid Cloud Sentin
 | - Heuristics Engine | `test_heuristics.py` | 14 | ✅ |
 | - Scan API Endpoint | `test_scan_endpoint.py` | 18 | ✅ |
 | - Pydantic Schemas | `test_schemas.py` | 24 | ✅ |
-| **Android (Kotlin)** | | **~50+** | 📝 |
-| - Domain: RiskLevel | `RiskLevelTest.kt` | 4 | 📝 |
-| - Domain: AppPackage | `AppPackageTest.kt` | 6 | 📝 |
-| - Domain: RiskAssessment | `RiskAssessmentTest.kt` | 6 | 📝 |
-| - Domain: Repository Contract | `ThreatRepositoryContractTest.kt` | 5 | 📝 |
-| - Domain: ScanAppUseCase | `ScanAppUseCaseTest.kt` | 1 | 📝 |
-| - Data: CachedRiskEntity | `CachedRiskEntityTest.kt` | 7 | 📝 |
-| - Data: Mappers | `MappersTest.kt` | 8 | 📝 |
-| - Data: DTOs | `DtosTest.kt` | 10 | 📝 |
-| - Data: MalwareScanner | `MalwareScannerScoreInterpretationTest.kt` | 14 | 📝 |
-| - Data: Repository | `ThreatRepositoryImplTest.kt` | 8 | 📝 |
-| - Presentation: ViewModel | `ScanViewModelTest.kt` | 7 | 📝 |
+| **Android (Kotlin)** | | **~55+** | ✅ |
+| - Domain: RiskLevel | `RiskLevelTest.kt` | 4 | ✅ |
+| - Domain: AppPackage | `AppPackageTest.kt` | 6 | ✅ |
+| - Domain: RiskAssessment | `RiskAssessmentTest.kt` | 6 | ✅ |
+| - Domain: Repository Contract | `ThreatRepositoryContractTest.kt` | 5 | ✅ |
+| - Domain: ScanAppUseCase | `ScanAppUseCaseTest.kt` | 1 | ✅ |
+| - Data: CachedRiskEntity | `CachedRiskEntityTest.kt` | 7 | ✅ |
+| - Data: Mappers | `MappersTest.kt` | 8 | ✅ |
+| - Data: DTOs | `DtosTest.kt` | 10 | ✅ |
+| - Data: MalwareScanner | `MalwareScannerScoreInterpretationTest.kt` | 14 | ✅ |
+| - Data: FeatureExtractor | `FeatureExtractorTest.kt` | 4 | ✅ |
+| - Data: Repository | `ThreatRepositoryImplTest.kt` | 8 | ✅ |
+| - Presentation: ViewModel | `ScanViewModelTest.kt` | 7 | ✅ |
 
-> **Legend**: ✅ = Verified, 📝 = Written (needs Gradle build to verify)
+> **Legend**: ✅ = Verified (via Gradle build)
 
 ---
 

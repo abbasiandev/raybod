@@ -55,11 +55,11 @@ We deploy a **Practical AI** approach:
 - [x] **Presentation Tests**: ViewModel lifecycle and state management tests.
 - [x] See [TESTING.md](./TESTING.md) for full documentation.
 
-### Phase 2: On-Device AI Integration (The Core Win) 🔄
-- [ ] **Asset Integration**: Import `saved_model.tflite` and `features.json` from reference architecture.
-- [ ] **Feature Extractor**: Implement `PackageInfo` -> `FloatArray` converter (The "DNA" Extractor).
-- [ ] **TFLite Service**: Create a robust `MalwareScanner` class wrapping the interpreter.
-- [ ] **Validation**: Verify correct inference against known benign apps.
+### Phase 2: On-Device AI Integration (The Core Win) ✅
+- [x] **Asset Integration**: Import `saved_model.tflite` and `features.json` from reference architecture.
+- [x] **Feature Extractor**: Implement `PackageInfo` -> `FloatArray` converter (The "DNA" Extractor).
+- [x] **TFLite Service**: Create a robust `MalwareScanner` class wrapping the interpreter.
+- [x] **Validation**: Verify correct inference against known benign apps.
 
 ### Phase 3: Real-Time Protection 🔄
 - [ ] **SentinelService**: Wire up the Foreground Service to `PACKAGE_ADDED` broadcasts.
