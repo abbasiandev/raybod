@@ -1,0 +1,34 @@
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Package Name</th>
+                <th>Threat Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.id }}</td>
+                <td>{{ entry.package_name }}</td>
+                <td>
+                    <span class="badge badge-danger">{{ entry.threat_type }}</span>
+                </td>
+                <td>
+                    <button class="btn btn-secondary btn-sm" hx-delete="/dashboard/blocklist/{{ entry.id }}"
+                        hx-target="#blocklist-table" hx-swap="innerHTML"
+                        hx-confirm="Remove {{ entry.package_name }} from blocklist?">
+                        🗑️ Remove
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">No packages in blocklist.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

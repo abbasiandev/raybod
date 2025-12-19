@@ -15,7 +15,8 @@ class ThreatRepositoryImpl @Inject constructor(
     private val malwareScanner: com.codekhoda.data.ml.MalwareScanner
 ) : ThreatRepository {
 
-    override suspend fun scanApp(appPackage: AppPackage): RiskAssessment {
+    override suspend fun scanApp(appPackage: AppPackage, lowSpeedMode: Boolean): RiskAssessment {
+
         // 1. Check local cache
         val cached = riskDao.getRisk(appPackage.packageName)
         if (cached != null) {

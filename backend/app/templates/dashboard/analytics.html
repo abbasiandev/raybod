@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+
+{% block top_actions %}
+<a href="/dashboard/export/csv" class="btn btn-secondary btn-sm">
+    📥 Export CSV
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon primary">📱</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ unique_devices }}</div>
+            <div class="stat-label">Unique Devices</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon success">📊</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ logs | length }}</div>
+            <div class="stat-label">Recent Scans</div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Scan History</h3>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Package</th>
+                    <th>Version</th>
+                    <th>Risk Level</th>
+                    <th>Threat Type</th>
+                    <th>Heuristics</th>
+                    <th>Device</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.package_name }}</td>
+                    <td>{{ log.version_code }}</td>
+                    <td>
+                        <span
+                            class="badge badge-{% if log.risk_level == 'SAFE' %}safe{% elif log.risk_level in ['HIGH', 'CRITICAL'] %}danger{% else %}warning{% endif %}">
+                            {{ log.risk_level }}
+                        </span>
+                    </td>
+                    <td>{{ log.threat_type or '—' }}</td>
+                    <td>{{ log.heuristics_used | join(', ') if log.heuristics_used else '—' }}</td>
+                    <td>{{ log.device_id[:12] if log.device_id else '—' }}{% if log.device_id and log.device_id|length >
+                        12 %}...{% endif %}</td>
+                    <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '—' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted">No scan logs recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

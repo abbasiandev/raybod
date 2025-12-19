@@ -1,0 +1,58 @@
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>
+                    {{ user.username }}
+                    {% if user.id == current_user.id %}
+                    <span class="badge badge-info">You</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span
+                        class="badge badge-{% if user.role.name == 'super_admin' %}safe{% elif user.role.name == 'admin' %}warning{% else %}info{% endif %}">
+                        {{ user.role.name | replace('_', ' ') | title }}
+                    </span>
+                </td>
+                <td>
+                    {% if user.is_active %}
+                    <span class="text-success">● Active</span>
+                    {% else %}
+                    <span class="text-muted">● Inactive</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '—' }}</td>
+                <td>
+                    {% if user.id != current_user.id %}
+                    <form action="/dashboard/users/{{ user.id }}/toggle" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary btn-sm">
+                            {% if user.is_active %}🔒 Disable{% else %}🔓 Enable{% endif %}
+                        </button>
+                    </form>
+                    <button class="btn btn-danger btn-sm" hx-delete="/dashboard/users/{{ user.id }}"
+                        hx-target="#users-table" hx-swap="innerHTML" hx-confirm="Delete user {{ user.username }}?">
+                        🗑️
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">No users found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -30,25 +30,102 @@ class BlocklistEntry(Base):
     package_name = Column(String, unique=True, index=True)
     threat_type = Column(String, default="Known Malware")
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
-    # Seed data if empty
+
+def get_db():
+    """Dependency for getting database session."""
     db = SessionLocal()
-    if not db.query(AllowlistEntry).first():
-        seeds = [
-            "com.android.chrome",
-            "com.google.android.apps.maps",
-            "com.whatsapp"
-        ]
-        for p in seeds:
-            db.add(AllowlistEntry(package_name=p))
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def init_db():
+    """Initialize database and seed default data."""
+    # Import models to ensure tables are created
+    from app.models.user import User, Role
+    from app.models.scan_log import ScanLog
+    
+    Base.metadata.create_all(bind=engine)
+    
+    db = SessionLocal()
+    try:
+        # Seed allowlist if empty
+        if not db.query(AllowlistEntry).first():
+            seeds = [
+                "com.android.chrome",
+                "com.google.android.apps.maps",
+                "com.whatsapp"
+            ]
+            for p in seeds:
+                db.add(AllowlistEntry(package_name=p))
+            
+            bad_seeds = [
+                ("com.example.virus", "Known Malware"),
+                ("com.spyware.tracker", "Known Malware")
+            ]
+            for p, t in bad_seeds:
+                db.add(BlocklistEntry(package_name=p, threat_type=t))
+            
+            db.commit()
         
-        bad_seeds = [
-            ("com.example.virus", "Known Malware"),
-            ("com.spyware.tracker", "Known Malware")
-        ]
-        for p, t in bad_seeds:
-            db.add(BlocklistEntry(package_name=p, threat_type=t))
-        
-        db.commit()
-    db.close()
+        # Seed roles if empty
+        if not db.query(Role).first():
+            from passlib.context import CryptContext
+            pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+            
+            # Define roles with permissions
+            roles_data = [
+                {
+                    "name": "super_admin",
+                    "permissions": {
+                        "manage_users": True,
+                        "manage_allowlist": True,
+                        "manage_blocklist": True,
+                        "view_analytics": True,
+                        "export_data": True
+                    }
+                },
+                {
+                    "name": "admin",
+                    "permissions": {
+                        "manage_users": False,
+                        "manage_allowlist": True,
+                        "manage_blocklist": True,
+                        "view_analytics": True,
+                        "export_data": True
+                    }
+                },
+                {
+                    "name": "viewer",
+                    "permissions": {
+                        "manage_users": False,
+                        "manage_allowlist": False,
+                        "manage_blocklist": False,
+                        "view_analytics": True,
+                        "export_data": True
+                    }
+                }
+            ]
+            
+            for role_data in roles_data:
+                role = Role(name=role_data["name"], permissions=role_data["permissions"])
+                db.add(role)
+            
+            db.commit()
+            
+            # Seed default admin user (admin/admin)
+            super_admin_role = db.query(Role).filter(Role.name == "super_admin").first()
+            if super_admin_role:
+                hashed_password = pwd_context.hash("admin")
+                admin_user = User(
+                    username="admin",
+                    hashed_password=hashed_password,
+                    role_id=super_admin_role.id,
+                    is_active=True
+                )
+                db.add(admin_user)
+                db.commit()
+    finally:
+        db.close()
+
