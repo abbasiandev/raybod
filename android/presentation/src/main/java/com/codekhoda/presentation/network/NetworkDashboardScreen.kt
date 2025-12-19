@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.VpnService
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -39,7 +40,21 @@ fun NetworkDashboardScreen(
     val activeFlows by viewModel.activeFlows.collectAsState()
     val alerts by viewModel.networkAlerts.collectAsState()
     val isVpnActive by viewModel.isVpnActive.collectAsState()
+    val isSimulating by viewModel.isSimulating.collectAsState()
     val context = LocalContext.current
+
+    // Track alert count to trigger flash animation
+    var lastAlertCount by remember { mutableIntStateOf(alerts.size) }
+    var showThreatFlash by remember { mutableStateOf(false) }
+
+    LaunchedEffect(alerts.size) {
+        if (alerts.size > lastAlertCount) {
+            showThreatFlash = true
+            kotlinx.coroutines.delay(800)
+            showThreatFlash = false
+        }
+        lastAlertCount = alerts.size
+    }
 
     val vpnPrepareLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -96,12 +111,18 @@ fun NetworkDashboardScreen(
             if (isVpnActive) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { viewModel.simulateMaliciousFlow() },
+                    onClick = { viewModel.toggleSimulation() },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = NeonPink.copy(alpha = 0.2f)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSimulating) NeonPink.copy(alpha = 0.4f) else NeonPink.copy(alpha = 0.2f)
+                    ),
                     shape = MaterialTheme.shapes.medium
                 ) {
-                    Text("SIMULATE THREAT DETECTION", color = NeonPink, style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        if (isSimulating) "STOP SIMULATION" else "SIMULATE THREAT DETECTION",
+                        color = NeonPink,
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
 
@@ -130,7 +151,8 @@ fun NetworkDashboardScreen(
 
             // Traffic Pulse Visualization (Decorative)
             TrafficPulseBox(
-                isActive = isVpnActive && activeFlows.isNotEmpty(),
+                isVpnActive && activeFlows.isNotEmpty(),
+                showThreatFlash,
                 modifier = Modifier.fillMaxWidth().height(120.dp)
             )
 
@@ -234,33 +256,76 @@ private fun stopVpnService(context: android.content.Context) {
 }
 
 @Composable
-fun TrafficPulseBox(isActive: Boolean, modifier: Modifier) {
+fun TrafficPulseBox(isActive: Boolean, isThreatDetected: Boolean, modifier: Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "TrafficPulse")
     val pulseProgress by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing)
+            animation = tween(3000, easing = LinearEasing)
         ),
         label = "PulseProgress"
     )
 
+    val threatColor = animateColorAsState(
+        targetValue = if (isThreatDetected) NeonPink else NeonCyan,
+        animationSpec = tween(300),
+        label = "ThreatColor"
+    )
+    
+    val threatAlpha = animateFloatAsState(
+        targetValue = if (isThreatDetected) 0.3f else 0.05f,
+        animationSpec = tween(300),
+        label = "ThreatAlpha"
+    )
+
+    // Generate random properties for each line once
+    val lineProperties = remember {
+        val random = java.util.Random()
+        List(6) { 
+            Triple(
+                0.2f + random.nextFloat() * 0.8f, // speed multiplier (0.2 to 1.0)
+                random.nextFloat(),               // initial offset (0.0 to 1.0)
+                (2 + random.nextInt(4)).dp        // size (2dp to 5dp)
+            )
+        }
+    }
+
     StatusCard(
-        status = if (isActive) CardStatus.SCANNING else CardStatus.NEUTRAL,
+        status = when {
+            isThreatDetected -> CardStatus.DANGER
+            isActive -> CardStatus.SCANNING
+            else -> CardStatus.NEUTRAL
+        },
         modifier = modifier,
-        animated = isActive
+        animated = isActive || isThreatDetected
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
             val height = size.height
-            val center = Offset(width / 2, height / 2)
+
+            // Draw background grid
+            val gridStep = 40.dp.toPx()
+            for (x in 0 until (width / gridStep).toInt() + 1) {
+                drawLine(
+                    color = threatColor.value.copy(alpha = 0.03f),
+                    start = Offset(x * gridStep, 0f),
+                    end = Offset(x * gridStep, height),
+                    strokeWidth = 0.5.dp.toPx()
+                )
+            }
 
             // Draw horizontal data lines
-            val lineCount = 5
-            for (i in 0 until lineCount) {
+            val lineCount = lineProperties.size
+            lineProperties.forEachIndexed { i, props ->
+                val speedMult = props.first
+                val initialOffset = props.second
+                val dotSize = props.third.toPx()
+                
                 val y = height * (i + 1) / (lineCount + 1)
+                
                 drawLine(
-                    color = NeonCyan.copy(alpha = 0.1f),
+                    color = threatColor.value.copy(alpha = threatAlpha.value),
                     start = Offset(0f, y),
                     end = Offset(width, y),
                     strokeWidth = 1.dp.toPx()
@@ -268,39 +333,82 @@ fun TrafficPulseBox(isActive: Boolean, modifier: Modifier) {
                 
                 // Animated pulse on each line
                 if (isActive) {
-                    val pulseX = (width * ((pulseProgress + (i * 0.2f)) % 1f))
+                    // Use line-specific speed and offset
+                    val individualProgress = (pulseProgress * speedMult + initialOffset) % 1f
+                    val pulseX = width * individualProgress
+                    
                     drawCircle(
-                        color = NeonCyan.copy(alpha = 0.6f),
-                        radius = 3.dp.toPx(),
+                        color = threatColor.value.copy(alpha = 0.6f),
+                        radius = dotSize,
                         center = Offset(pulseX, y)
                     )
                     drawCircle(
-                        color = NeonCyan.copy(alpha = 0.2f),
-                        radius = 8.dp.toPx(),
+                        color = threatColor.value.copy(alpha = 0.15f),
+                        radius = dotSize * 2.5f,
                         center = Offset(pulseX, y)
                     )
+                    
+                    // Add secondary smaller packet on some lines
+                    if (i % 2 == 0) {
+                        val secondaryProgress = (individualProgress + 0.3f) % 1f
+                        val secondaryX = width * secondaryProgress
+                        drawCircle(
+                            color = threatColor.value.copy(alpha = 0.4f),
+                            radius = dotSize * 0.7f,
+                            center = Offset(secondaryX, y)
+                        )
+                    }
                 }
             }
 
-            // Central Status Text
-            val statusText = if (isActive) "ENCRYPTED TUNNEL ACTIVE" else "IDLE"
-            // We can't easily draw text in Canvas without native canvas, so we'll use a Box overlay instead
+            // Scanner Beam Effect
+            if (isActive) {
+                val scannerX = width * pulseProgress
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            threatColor.value.copy(alpha = 0.15f),
+                            Color.Transparent
+                        ),
+                        startX = scannerX - 40.dp.toPx(),
+                        endX = scannerX + 40.dp.toPx()
+                    ),
+                    topLeft = Offset(scannerX - 40.dp.toPx(), 0f),
+                    size = androidx.compose.ui.geometry.Size(80.dp.toPx(), height)
+                )
+                
+                drawLine(
+                    color = threatColor.value.copy(alpha = 0.4f),
+                    start = Offset(scannerX, 0f),
+                    end = Offset(scannerX, height),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
         }
         
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = if (isActive) "ENCRYPTED TUNNEL ACTIVE" else "SHIELD STANDBY",
+                    text = when {
+                        isThreatDetected -> "THREAT DETECTED!"
+                        isActive -> "ENCRYPTED TUNNEL ACTIVE"
+                        else -> "SHIELD STANDBY"
+                    },
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (isActive) NeonCyan else TextSecondary,
+                    color = when {
+                        isThreatDetected -> NeonPink
+                        isActive -> NeonCyan
+                        else -> TextSecondary
+                    },
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 2.sp
                 )
-                if (isActive) {
+                if (isActive || isThreatDetected) {
                     Text(
-                        text = "REAL-TIME PACKET INSPECTION",
+                        text = if (isThreatDetected) "MALICIOUS PACKET INTERCEPTED" else "REAL-TIME PACKET INSPECTION",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextPrimary.copy(alpha = 0.7f),
+                        color = if (isThreatDetected) NeonPink.copy(alpha = 0.7f) else TextPrimary.copy(alpha = 0.7f),
                         fontSize = 8.sp
                     )
                 }
@@ -341,7 +449,8 @@ fun LiveTrafficList(flows: List<NetworkFlow>) {
         }
         items(flows) { flow ->
             StatusCard(
-                status = if (flow.riskLevel == RiskLevel.SAFE) CardStatus.SAFE else CardStatus.NEUTRAL
+                status = if (flow.riskLevel == RiskLevel.SAFE) CardStatus.SAFE else CardStatus.NEUTRAL,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp).fillMaxWidth(),
@@ -374,18 +483,41 @@ fun ThreatLogList(alerts: List<NetworkAlert>) {
         items(alerts) { alert ->
             StatusCard(
                 status = CardStatus.DANGER,
+                modifier = Modifier.fillMaxWidth(),
                 animated = true
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         StatusIndicator(status = IndicatorStatus.DANGER)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = alert.threatType, style = MaterialTheme.typography.titleMedium, color = NeonPink)
+                        Text(
+                            text = alert.threatType,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = NeonPink,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = alert.description, style = MaterialTheme.typography.bodySmall, color = TextPrimary)
+                    Text(
+                        text = alert.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextPrimary,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "App: ${alert.packageName} • Dest: ${alert.destination}", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    Text(
+                        text = "App: ${alert.packageName} • Dest: ${alert.destination}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

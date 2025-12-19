@@ -23,6 +23,9 @@ class NetworkViewModel @Inject constructor(
     private val _isVpnActive = MutableStateFlow(false)
     val isVpnActive: StateFlow<Boolean> = _isVpnActive.asStateFlow()
 
+    private val _isSimulating = MutableStateFlow(false)
+    val isSimulating: StateFlow<Boolean> = _isSimulating.asStateFlow()
+
     val activeFlows: StateFlow<List<NetworkFlow>> = repository.getActiveFlows()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -31,6 +34,25 @@ class NetworkViewModel @Inject constructor(
 
     fun setVpnActive(active: Boolean) {
         _isVpnActive.value = active
+        if (!active) {
+            _isSimulating.value = false
+        }
+    }
+
+    fun toggleSimulation() {
+        _isSimulating.value = !_isSimulating.value
+        if (_isSimulating.value) {
+            startSimulationLoop()
+        }
+    }
+
+    private fun startSimulationLoop() {
+        viewModelScope.launch {
+            while (_isSimulating.value) {
+                simulateMaliciousFlow()
+                kotlinx.coroutines.delay(3000)
+            }
+        }
     }
 
     fun simulateMaliciousFlow() {
