@@ -109,6 +109,8 @@ Building trust through transparency and aesthetics.
 Activating the hybrid network effects.
 - [x] **Enable Metadata Upload**: Send anonymized threat signatures to the cloud.
 - [x] **Integrate Global Allowlist API**: Check "Risky" verdicts against the cloud allowlist.
+- [x] **Advanced Forensic Logging**: Capture and sync source-level ensemble scores to the Cloud Brain.
+- [x] **Trust-First Onboarding**: Premium UX flow for permission education and "Encouragement Loop" dashboards.
 
 ---
 

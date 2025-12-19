@@ -140,4 +140,28 @@ class SystemPackageFilterTest {
             )
         }
     }
+
+    @Test
+    fun `detectsDangerousPermissionCombinations returns high scores for malicious combos`() {
+        // 1. ODF Banking Trojan: Accessibility + Alert Window + SMS + Internet -> Critical (Score > 0.9)
+        val bankingTrojan = listOf(
+            "android.permission.BIND_ACCESSIBILITY_SERVICE", 
+            "android.permission.SYSTEM_ALERT_WINDOW", 
+            "android.permission.READ_SMS", 
+            "android.permission.INTERNET"
+        )
+        assertTrue("Banking Trojan combo should be critical risk", SystemPackageFilter.getPermissionRiskScore(bankingTrojan) >= 0.9f)
+
+        // 2. Advanced Spyware: Camera + Audio + Background Location -> Critical (Score > 0.9)
+        val spyCombo = listOf(
+            "android.permission.CAMERA", 
+            "android.permission.RECORD_AUDIO", 
+            "android.permission.ACCESS_BACKGROUND_LOCATION"
+        )
+        assertTrue("Advanced Spyware combo should be critical risk", SystemPackageFilter.getPermissionRiskScore(spyCombo) >= 0.9f)
+
+        // 3. SMS Worm: Contacts + Send SMS -> High (Score >= 0.8)
+        val wormCombo = listOf("android.permission.READ_CONTACTS", "android.permission.SEND_SMS")
+        assertTrue("SMS Worm combo should be high risk", SystemPackageFilter.getPermissionRiskScore(wormCombo) >= 0.8f)
+    }
 }

@@ -11,7 +11,10 @@ data class CachedRiskEntity(
     val threatType: String,
     val description: String,
     val timestamp: Long,
+    val appVersion: Long = 0,
+    val lastUpdateTime: Long = 0,
     val heuristicsUsed: List<String> = emptyList(),
+    val ensembleMetadata: Map<String, Float> = emptyMap(),
     val syncStatus: String = "SYNCED" // SYNCED, PENDING, LOCAL_ONLY
 )
 

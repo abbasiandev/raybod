@@ -15,4 +15,15 @@ class Converters {
         val listType = object : TypeToken<List<String>>() {}.type
         return Gson().fromJson(value, listType)
     }
+
+    @TypeConverter
+    fun fromStringFloatMap(value: Map<String, Float>): String {
+        return Gson().toJson(value)
+    }
+
+    @TypeConverter
+    fun toStringFloatMap(value: String): Map<String, Float> {
+        val mapType = object : TypeToken<Map<String, Float>>() {}.type
+        return Gson().fromJson(value, mapType)
+    }
 }

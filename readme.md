@@ -30,7 +30,8 @@
 | **⚡ Lightweight Endpoint** | Minimal battery drain through cloud-offloaded processing |
 | **🧠 Deep Analysis** | Cloud-based heuristics & ML for advanced threat detection |
 | **🔴 Real-time Protection** | Instantaneous feedback and blocking capabilities |
-| **🌐 Offline Support** | Local caching ensures protection even without connectivity |
+| **🌐 Hybrid Ensemble** | On-device TFLite + Heuristic Matrix + Cloud Brain Intelligence |
+| **🛡️ Trust-First UX** | Educational onboarding and security score gamification |
 
 ---
 
@@ -262,10 +263,8 @@ pytest --cov=app tests/
 - [x] **Core Scanning Loop** - Real-time app analysis
 - [x] **Cloud Integration** - Offloaded threat analysis
 - [x] **Offline Support** - Local caching with Room
-- [x] **Heuristic Detection** - Permission-based risk analysis
-- [x] **Modern UI** - Cyberpunk aesthetic with animations
-- [x] **Clean Architecture** - MVVM with separation of concerns
-- [ ] **ML Classification** - TensorFlow model integration (planned)
+- [x] **ML Classification** - Ensemble TFLite model integration
+- [x] **Trust-First Onboarding** - Educational permission dashboard
 - [ ] **Network Monitoring** - Packet analysis (planned)
 - [ ] **Premium Features** - Subscription model (planned)
 

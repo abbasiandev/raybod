@@ -100,6 +100,77 @@ class FeatureExtractor @Inject constructor(
             }
         }
         
+        // 3. String Analysis: Obfuscation and Suspicious Components
+        // Check if package name itself is suspicious (redundant but good for vector weight)
+        if (appPackage.packageName.length < 5 || appPackage.packageName.split(".").size < 2) {
+            matchedFeatures.add("Literal: Highly unusual package naming")
+        }
+
+        // Logic for known malicious strings in package/class names
+        val maliciousPatterns = listOf("metasploit", "spy", "stealer", "rat", "trojan", "hack", "payload")
+        maliciousPatterns.forEach { pattern ->
+            if (appPackage.packageName.contains(pattern, ignoreCase = true)) {
+                matchedFeatures.add("Literal: Malicious string '$pattern' found in package name")
+            }
+        }
+
+        // Check for common obfuscation patterns (e.g., single letter class/package names)
+        val parts = appPackage.packageName.split(".")
+        if (parts.any { it.length == 1 }) {
+            matchedFeatures.add("Heuristic: Potential obfuscation (single-letter package part)")
+        }
+
+        // 4. Native Library Fingerprinting (Category 1.2)
+        if (appPackage.nativeLibraries.isNotEmpty()) {
+            matchedFeatures.add("Native: App contains ${appPackage.nativeLibraries.size} native libraries")
+            
+            val suspiciousLibs = listOf("crypto", "ssl", "ssh", "payload", "shell", "proxy", "inject")
+            appPackage.nativeLibraries.forEach { lib ->
+                if (suspiciousLibs.any { lib.contains(it, ignoreCase = true) }) {
+                    matchedFeatures.add("Native: Suspicious library '$lib' detected")
+                }
+            }
+        }
+
+        // 5. Accessibility Abuse Awareness (Category 2.2)
+        if (appPackage.permissions.contains("android.permission.BIND_ACCESSIBILITY_SERVICE")) {
+            matchedFeatures.add("Risk: Accessibility Service detected (High Privilege)")
+            
+            // Check for potential overlay or information theft patterns
+            if (appPackage.permissions.contains("android.permission.SYSTEM_ALERT_WINDOW")) {
+                matchedFeatures.add("Risk: Critical combination: Accessibility + Overlay Alert")
+            }
+            if (appPackage.permissions.contains("android.permission.QUERY_ALL_PACKAGES")) {
+                matchedFeatures.add("Risk: Critical combination: Accessibility + Package Scanning")
+            }
+        }
+
+        // 6. Structural Analysis: Component Counts (Category 4.3)
+        if (appPackage.activityCount == 0 && (appPackage.serviceCount > 0 || appPackage.receiverCount > 0)) {
+            matchedFeatures.add("Structural: No activities but has services/receivers (Stealth profile)")
+        }
+        if (appPackage.receiverCount > 10) {
+            matchedFeatures.add("Structural: Excessively high broadcast receiver count (${appPackage.receiverCount})")
+        }
+
+        // 7. Intent Filter Red Flags (Category 4.2)
+        val highRiskIntents = listOf(
+            "android.intent.action.BOOT_COMPLETED",
+            "android.provider.Telephony.SMS_RECEIVED",
+            "android.intent.action.PACKAGE_REPLACED",
+            "android.intent.action.NEW_OUTGOING_CALL"
+        )
+        
+        highRiskIntents.forEach { intent ->
+            if (appPackage.intents.contains(intent)) {
+                // Check if paired with internet for exfiltration
+                if (appPackage.permissions.contains("android.permission.INTERNET")) {
+                    val shortName = intent.substringAfterLast('.')
+                    matchedFeatures.add("Risk: $shortName + Internet (Potential Exfiltration)")
+                }
+            }
+        }
+
         return FeatureAnalysisResult(vector, matchedFeatures)
     }
 

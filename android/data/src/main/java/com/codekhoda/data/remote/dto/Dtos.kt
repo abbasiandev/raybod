@@ -6,7 +6,8 @@ data class AppMetadataDto(
     @SerializedName("package_name") val packageName: String,
     @SerializedName("version_code") val versionCode: Long,
     @SerializedName("signature") val signature: String,
-    @SerializedName("permissions") val permissions: List<String>
+    @SerializedName("permissions") val permissions: List<String>,
+    @SerializedName("ensemble_metadata") val ensembleMetadata: Map<String, Float>? = null
 )
 
 data class ScanResultDto(

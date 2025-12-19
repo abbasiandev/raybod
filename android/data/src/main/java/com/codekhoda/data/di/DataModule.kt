@@ -5,7 +5,9 @@ import androidx.room.Room
 import com.codekhoda.data.local.AppDatabase
 import com.codekhoda.data.local.dao.RiskDao
 import com.codekhoda.data.repository.ThreatRepositoryImpl
+import com.codekhoda.data.repository.UserPreferencesRepositoryImpl
 import com.codekhoda.domain.repository.ThreatRepository
+import com.codekhoda.domain.repository.UserPreferencesRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,6 +38,12 @@ object DataModule {
     @Singleton
     fun provideThreatRepository(repository: ThreatRepositoryImpl): ThreatRepository {
         return repository
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserPreferencesRepository(@ApplicationContext context: Context): UserPreferencesRepository {
+        return UserPreferencesRepositoryImpl(context)
     }
 
     @Provides

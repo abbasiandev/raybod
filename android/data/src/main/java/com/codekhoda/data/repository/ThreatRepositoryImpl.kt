@@ -17,10 +17,26 @@ class ThreatRepositoryImpl @Inject constructor(
 
     override suspend fun scanApp(appPackage: AppPackage, lowSpeedMode: Boolean): RiskAssessment {
 
-        // 1. Check local cache
+        // 1. Check local cache & Differential Scanning (Category 5.2)
         val cached = riskDao.getRisk(appPackage.packageName)
-        if (cached != null) {
+        if (cached != null && cached.lastUpdateTime == appPackage.lastUpdateTime) {
             return cached.toDomain()
+        }
+        
+        // 1.1 Reputation Caching: Skip if trusted signature (Category 5.3)
+        if (com.codekhoda.domain.filter.SystemPackageFilter.isTrustedSignature(appPackage.signature)) {
+            val trustedResult = RiskAssessment(
+                packageName = appPackage.packageName,
+                riskLevel = RiskLevel.SAFE,
+                description = "Trusted Developer Signature Detected",
+                heuristicsUsed = listOf("Reputation: Trusted Developer")
+            )
+            riskDao.insertRisk(trustedResult.toEntity(
+                syncStatus = com.codekhoda.data.local.entity.SyncStatus.SYNCED,
+                appVersion = appPackage.versionCode,
+                lastUpdateTime = appPackage.lastUpdateTime
+            ))
+            return trustedResult
         }
 
         // 2. Perform On-Device AI Scan (First Line of Defense)
@@ -28,7 +44,11 @@ class ThreatRepositoryImpl @Inject constructor(
         
         // If critical, return immediately (Blocking threat)
         if (localResult.riskLevel == RiskLevel.CRITICAL) {
-             riskDao.insertRisk(localResult.toEntity(com.codekhoda.data.local.entity.SyncStatus.LOCAL_ONLY))
+             riskDao.insertRisk(localResult.toEntity(
+                 syncStatus = com.codekhoda.data.local.entity.SyncStatus.LOCAL_ONLY,
+                 appVersion = appPackage.versionCode,
+                 lastUpdateTime = appPackage.lastUpdateTime
+             ))
              return localResult
         }
 
@@ -39,7 +59,8 @@ class ThreatRepositoryImpl @Inject constructor(
                 packageName = appPackage.packageName,
                 versionCode = appPackage.versionCode,
                 signature = appPackage.signature,
-                permissions = appPackage.permissions
+                permissions = appPackage.permissions,
+                ensembleMetadata = localResult.ensembleMetadata
             )
             val response = api.analyzeApp(dto)
             
@@ -67,7 +88,11 @@ class ThreatRepositoryImpl @Inject constructor(
         }
 
         // 4. Cache result
-        riskDao.insertRisk(finalResult.toEntity(syncStatus))
+        riskDao.insertRisk(finalResult.toEntity(
+            syncStatus = syncStatus,
+            appVersion = appPackage.versionCode,
+            lastUpdateTime = appPackage.lastUpdateTime
+        ))
 
         return finalResult
     }

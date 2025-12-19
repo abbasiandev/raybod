@@ -17,15 +17,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.codekhoda.domain.model.RiskAssessment
 import com.codekhoda.domain.model.RiskLevel
-import com.codekhoda.presentation.components.*
-import com.codekhoda.presentation.theme.*
+import com.codekhoda.presentation.permissions.PermissionViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun ScanScreen(
-    viewModel: ScanViewModel = hiltViewModel()
+    viewModel: ScanViewModel = hiltViewModel(),
+    permissionViewModel: PermissionViewModel = hiltViewModel(),
+    onNavigateToSecurity: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val permissionState by permissionViewModel.uiState.collectAsState()
+    
+    val vulnerablePermission = permissionState.permissions.find { !it.isGranted }
     var selectedAssessment by remember { mutableStateOf<RiskAssessment?>(null) }
 
     Box(
@@ -74,6 +78,15 @@ fun ScanScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            // Encouragement Loop: Nudge if vulnerable
+            if (!state.isScanning && vulnerablePermission != null) {
+                SecurityNudgeBanner(
+                    text = "Enable ${vulnerablePermission.name} for better protection.",
+                    onClick = onNavigateToSecurity,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
 
             // Action Area
             if (!state.isScanning) {

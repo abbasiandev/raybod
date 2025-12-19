@@ -25,6 +25,7 @@ fun MainLayout(
     title: String,
     onNavigateToScan: () -> Unit,
     onNavigateToAbout: () -> Unit,
+    onNavigateToSecurity: () -> Unit,
     onExit: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -49,6 +50,19 @@ fun MainLayout(
                     colors = NavigationDrawerItemDefaults.colors(
                         unselectedContainerColor = Color.Transparent,
                         selectedContainerColor = NeonCyan.copy(alpha = 0.1f)
+                    )
+                )
+                NavigationDrawerItem(
+                    label = { Text("Security Dashboard") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onNavigateToSecurity()
+                    },
+                    icon = { Icon(Icons.Default.Search, contentDescription = null, tint = NeonCyan) }, // Should use a shield icon
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                    colors = NavigationDrawerItemDefaults.colors(
+                        unselectedContainerColor = Color.Transparent
                     )
                 )
                 NavigationDrawerItem(

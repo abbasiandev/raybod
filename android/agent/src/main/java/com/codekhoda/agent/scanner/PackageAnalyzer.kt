@@ -13,7 +13,13 @@ class PackageAnalyzer(private val context: Context) {
 
     suspend fun getInstalledApps(): List<AppPackage> = withContext(Dispatchers.IO) {
         val pm = context.packageManager
-        val packages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNATURES)
+        val flags = PackageManager.GET_PERMISSIONS or 
+                    PackageManager.GET_SIGNATURES or 
+                    PackageManager.GET_ACTIVITIES or 
+                    PackageManager.GET_SERVICES or 
+                    PackageManager.GET_RECEIVERS
+                    
+        val packages = pm.getInstalledPackages(flags)
         
         packages
             .filter { pkg -> !SystemPackageFilter.shouldExclude(pkg.packageName) }
@@ -23,7 +29,13 @@ class PackageAnalyzer(private val context: Context) {
     suspend fun analyzePackage(packageName: String): AppPackage? = withContext(Dispatchers.IO) {
         try {
             val pm = context.packageManager
-            val pkg = pm.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNATURES)
+            val flags = PackageManager.GET_PERMISSIONS or 
+                        PackageManager.GET_SIGNATURES or 
+                        PackageManager.GET_ACTIVITIES or 
+                        PackageManager.GET_SERVICES or 
+                        PackageManager.GET_RECEIVERS
+                        
+            val pkg = pm.getPackageInfo(packageName, flags)
             convertPackageInfo(pkg)
         } catch (e: Exception) {
             null
@@ -39,6 +51,8 @@ class PackageAnalyzer(private val context: Context) {
             emptyList<String>()
         }
         
+        val nativeLibs = getNativeLibraries(pkg)
+        
         return AppPackage(
             packageName = pkg.packageName,
             versionCode = if (android.os.Build.VERSION.SDK_INT >= 28) pkg.longVersionCode else pkg.versionCode.toLong(),
@@ -47,8 +61,30 @@ class PackageAnalyzer(private val context: Context) {
             permissions = permissions,
             intents = intents,
             installTime = pkg.firstInstallTime,
-            lastUpdateTime = pkg.lastUpdateTime
+            lastUpdateTime = pkg.lastUpdateTime,
+            nativeLibraries = nativeLibs,
+            activityCount = pkg.activities?.size ?: 0,
+            serviceCount = pkg.services?.size ?: 0,
+            receiverCount = pkg.receivers?.size ?: 0
         )
+    }
+
+    private fun getNativeLibraries(pkg: PackageInfo): List<String> {
+        val libs = mutableListOf<String>()
+        try {
+            val nativeLibDir = pkg.applicationInfo.nativeLibraryDir
+            val dir = java.io.File(nativeLibDir)
+            if (dir.exists() && dir.isDirectory) {
+                dir.listFiles()?.forEach { file ->
+                    if (file.name.endsWith(".so")) {
+                        libs.add(file.name)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return libs
     }
 
     private fun getSignature(pkg: PackageInfo): String {

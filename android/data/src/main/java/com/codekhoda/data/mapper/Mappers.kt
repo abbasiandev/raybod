@@ -11,18 +11,26 @@ fun CachedRiskEntity.toDomain(): RiskAssessment {
         threatType = this.threatType,
         description = this.description,
         timestamp = this.timestamp,
-        heuristicsUsed = this.heuristicsUsed
+        heuristicsUsed = this.heuristicsUsed,
+        ensembleMetadata = this.ensembleMetadata
     )
 }
 
-fun RiskAssessment.toEntity(syncStatus: com.codekhoda.data.local.entity.SyncStatus = com.codekhoda.data.local.entity.SyncStatus.SYNCED): CachedRiskEntity {
+fun RiskAssessment.toEntity(
+    syncStatus: com.codekhoda.data.local.entity.SyncStatus = com.codekhoda.data.local.entity.SyncStatus.SYNCED,
+    appVersion: Long = 0,
+    lastUpdateTime: Long = 0
+): CachedRiskEntity {
     return CachedRiskEntity(
         packageName = this.packageName,
         riskLevel = this.riskLevel.name,
         threatType = this.threatType,
         description = this.description,
         timestamp = this.timestamp,
+        appVersion = appVersion,
+        lastUpdateTime = lastUpdateTime,
         heuristicsUsed = this.heuristicsUsed,
+        ensembleMetadata = this.ensembleMetadata,
         syncStatus = syncStatus.name
     )
 }
