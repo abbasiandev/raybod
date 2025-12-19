@@ -1,5 +1,6 @@
 package com.codekhoda.presentation.permissions
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -158,6 +160,17 @@ fun SecurityScoreHeader(score: Int) {
         else -> CardStatus.DANGER
     }
     
+    val infiniteTransition = rememberInfiniteTransition(label = "ShieldPulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Pulse"
+    )
+
     StatusCard(
         status = status,
         modifier = Modifier
@@ -171,6 +184,20 @@ fun SecurityScoreHeader(score: Int) {
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Animated Shield Icon
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = when(status) {
+                    CardStatus.SAFE -> SafeGreen
+                    CardStatus.WARNING -> WarningOrange
+                    else -> AlertRed
+                },
+                modifier = Modifier.size(48.dp).scale(pulseScale)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
             Text(
                 text = "SECURITY SCORE",
                 color = TextSecondary,

@@ -1,5 +1,7 @@
 package com.codekhoda.presentation.network
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,10 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.codekhoda.domain.model.NetworkAlert
 import com.codekhoda.domain.model.NetworkFlow
@@ -71,6 +76,14 @@ fun NetworkDashboardScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Traffic Pulse Visualization (Decorative)
+            TrafficPulseBox(
+                isActive = activeFlows.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().height(120.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Section Tabs
             var selectedTab by remember { mutableStateOf(0) }
             TabRow(
@@ -97,6 +110,82 @@ fun NetworkDashboardScreen(
                 LiveTrafficList(activeFlows)
             } else {
                 ThreatLogList(alerts)
+            }
+        }
+    }
+}
+
+@Composable
+fun TrafficPulseBox(isActive: Boolean, modifier: Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "TrafficPulse")
+    val pulseProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing)
+        ),
+        label = "PulseProgress"
+    )
+
+    StatusCard(
+        status = if (isActive) CardStatus.SCANNING else CardStatus.NEUTRAL,
+        modifier = modifier,
+        animated = isActive
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+            val center = Offset(width / 2, height / 2)
+
+            // Draw horizontal data lines
+            val lineCount = 5
+            for (i in 0 until lineCount) {
+                val y = height * (i + 1) / (lineCount + 1)
+                drawLine(
+                    color = NeonCyan.copy(alpha = 0.1f),
+                    start = Offset(0f, y),
+                    end = Offset(width, y),
+                    strokeWidth = 1.dp.toPx()
+                )
+                
+                // Animated pulse on each line
+                if (isActive) {
+                    val pulseX = (width * ((pulseProgress + (i * 0.2f)) % 1f))
+                    drawCircle(
+                        color = NeonCyan.copy(alpha = 0.6f),
+                        radius = 3.dp.toPx(),
+                        center = Offset(pulseX, y)
+                    )
+                    drawCircle(
+                        color = NeonCyan.copy(alpha = 0.2f),
+                        radius = 8.dp.toPx(),
+                        center = Offset(pulseX, y)
+                    )
+                }
+            }
+
+            // Central Status Text
+            val statusText = if (isActive) "ENCRYPTED TUNNEL ACTIVE" else "IDLE"
+            // We can't easily draw text in Canvas without native canvas, so we'll use a Box overlay instead
+        }
+        
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = if (isActive) "ENCRYPTED TUNNEL ACTIVE" else "SHIELD STANDBY",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isActive) NeonCyan else TextSecondary,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 2.sp
+                )
+                if (isActive) {
+                    Text(
+                        text = "REAL-TIME PACKET INSPECTION",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextPrimary.copy(alpha = 0.7f),
+                        fontSize = 8.sp
+                    )
+                }
             }
         }
     }

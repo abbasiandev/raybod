@@ -1,8 +1,10 @@
 package com.codekhoda.presentation.scan
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -12,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.codekhoda.domain.model.RiskAssessment
 import com.codekhoda.domain.model.RiskLevel
 import com.codekhoda.presentation.components.*
@@ -31,68 +34,92 @@ fun ThreatDetailsScreen(
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        GlowingCard(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.95f),
-            glowColor = getRiskColor(assessment.riskLevel),
-            glowIntensity = 0.5f,
-            cornerRadius = 24.dp
+        // Full screen report style
+        StatusCard(
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.9f),
+            status = when (assessment.riskLevel) {
+                RiskLevel.SAFE -> CardStatus.SAFE
+                RiskLevel.LOW -> CardStatus.NEUTRAL
+                RiskLevel.MEDIUM -> CardStatus.WARNING
+                else -> CardStatus.DANGER
+            },
+            animated = assessment.riskLevel != RiskLevel.SAFE
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(24.dp)
             ) {
-                // Header
+                // Header - Forensic Style
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.Top,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
                         imageVector = getRiskIcon(assessment.riskLevel),
                         contentDescription = "Risk Icon",
                         tint = getRiskColor(assessment.riskLevel),
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(56.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = assessment.packageName,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = TextPrimary
+                            text = assessment.packageName.uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = assessment.riskLevel.name,
-                            style = MaterialTheme.typography.headlineMedium,
+                            text = "THREAT LEVEL: ${assessment.riskLevel.name}",
+                            style = MaterialTheme.typography.labelSmall,
                             color = getRiskColor(assessment.riskLevel),
                             fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "STATUS: ${if (assessment.riskLevel == RiskLevel.SAFE) "CLEAN" else "QUARANTINE RECOMMENDED"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            fontSize = 10.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-                Divider(color = getRiskColor(assessment.riskLevel).copy(alpha = 0.3f))
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Analysis Details
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "DETECTION LOG",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = NeonCyan,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = assessment.description.ifEmpty { "No malicious behavioral patterns detected during static and heuristic analysis." },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary,
+                            lineHeight = 20.sp
+                        )
+                    }
+                }
 
-                // Threat Description
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Forensics List
                 Text(
-                    text = "ANALYSIS REPORT",
+                    text = "DREBIN FORENSICS (AI VECTORS)",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = assessment.description.ifEmpty { "No specific threat vectors identified." },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = TextPrimary
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // DREBIN Explainability
-                Text(
-                    text = "DREBIN FORENSICS (EXPLAINABILITY)",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = TextSecondary,
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -102,7 +129,7 @@ fun ThreatDetailsScreen(
                 ) {
                     item {
                         DrebinCategoryView(
-                            "S2: Requested Permissions", 
+                            "S2: REQUESTED PERMISSIONS", 
                             assessment.drebinFeatures.s2RequestedPermissions.filter { it.contains("android.permission.") }
                                 .map { it.substringAfterLast('.') },
                             NeonCyan
@@ -110,42 +137,28 @@ fun ThreatDetailsScreen(
                     }
                     item {
                         DrebinCategoryView(
-                            "S7: Suspicious Patterns", 
+                            "S7: SUSPICIOUS PATTERNS", 
                             assessment.drebinFeatures.s7SuspiciousApis, 
                             NeonPink
                         )
                     }
                     item {
                         DrebinCategoryView(
-                            "S5: Restricted APIs", 
+                            "S5: RESTRICTED APIS", 
                             assessment.drebinFeatures.s5RestrictedApis, 
-                            NeonCyan
+                            NeonPurple
                         )
                     }
                     item {
                         DrebinCategoryView(
-                            "S8: Network Analysis", 
+                            "S8: NETWORK INFRASTRUCTURE", 
                             assessment.drebinFeatures.s8NetworkAddresses, 
-                            Color.Yellow
-                        )
-                    }
-                    item {
-                        DrebinCategoryView(
-                            "S3: App Components", 
-                            assessment.drebinFeatures.s3AppComponents, 
-                            TextSecondary
-                        )
-                    }
-                    item {
-                        DrebinCategoryView(
-                            "S1: Hardware Access", 
-                            assessment.drebinFeatures.s1Hardware.map { it.substringAfterLast('.') }, 
-                            Color.Green
+                            WarningOrange
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Action Buttons
                 Row(
@@ -153,11 +166,11 @@ fun ThreatDetailsScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     CyberButton(
-                        text = "CLOSE",
+                        text = "DISMISS",
                         onClick = onDismiss,
                         variant = ButtonVariant.SECONDARY,
                         modifier = Modifier.weight(1f),
-                        glowColor = getRiskColor(assessment.riskLevel)
+                        glowColor = TextSecondary
                     )
                     
                     if (assessment.riskLevel != RiskLevel.SAFE) {
@@ -165,7 +178,8 @@ fun ThreatDetailsScreen(
                             text = "UNINSTALL",
                             onClick = { /* TODO: Implement Uninstall */ },
                             variant = ButtonVariant.DANGER,
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
+                            modifier = Modifier.weight(1.5f),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                         )
                     }
                 }
