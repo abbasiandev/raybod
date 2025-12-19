@@ -162,7 +162,7 @@ fun ThreatDetailsScreen(
                             text = "UNINSTALL",
                             onClick = { /* TODO: Implement Uninstall */ },
                             variant = ButtonVariant.DANGER,
-                            modifier = Modifier.weight(1f)
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp)
                         )
                     }
                 }
