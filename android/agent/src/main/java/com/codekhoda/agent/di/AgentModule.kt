@@ -18,4 +18,10 @@ object AgentModule {
     fun providePackageAnalyzer(@ApplicationContext context: Context): PackageAnalyzer {
         return PackageAnalyzer(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideAppOpsWrapper(@ApplicationContext context: Context): com.codekhoda.agent.monitor.AppOpsWrapper {
+        return com.codekhoda.agent.monitor.AppOpsWrapperImpl(context)
+    }
 }

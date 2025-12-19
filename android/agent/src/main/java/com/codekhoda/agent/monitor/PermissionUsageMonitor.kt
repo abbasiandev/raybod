@@ -11,18 +11,43 @@ import javax.inject.Singleton
 
 @Singleton
 class PermissionUsageMonitor @Inject constructor(
-    @ApplicationContext private val context: Context
+    private val appOpsWrapper: AppOpsWrapper
 ) {
-    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
-
     fun getRecentPermissionUsage(durationMs: Long = 3600000): List<PermissionUsageEvent> { // Default 1 hour
-        // Temporarily disabled due to restricted AppOps API access issues in current build environment
-        return emptyList()
+        val targetOps = arrayOf(
+            AppOpsManager.OPSTR_CAMERA,
+            AppOpsManager.OPSTR_RECORD_AUDIO,
+            AppOpsManager.OPSTR_FINE_LOCATION,
+            AppOpsManager.OPSTR_COARSE_LOCATION
+        )
+        
+        val ops = appOpsWrapper.getRecentOps(durationMs, targetOps)
+        val events = mutableListOf<PermissionUsageEvent>()
+
+        ops.forEach { opData ->
+            val permission = opData.op
+            val accessType = mapOpToAccessType(permission)
+            
+            events.add(PermissionUsageEvent(
+                packageName = opData.packageName,
+                permission = permission,
+                timestamp = opData.timestamp,
+                wasInForeground = opData.isForeground,
+                durationMs = opData.duration,
+                accessType = accessType
+            ))
+        }
+        
+        return events.sortedByDescending { it.timestamp }
     }
 
-    /* Commented out problematic hidden API usage
-    private fun getLastAccessTimeCompat(opEntry: AppOpsManager.OpEntry): Long {
-        // ...
+    private fun mapOpToAccessType(op: String): AccessType {
+        return when (op) {
+            AppOpsManager.OPSTR_CAMERA -> AccessType.CAMERA
+            AppOpsManager.OPSTR_RECORD_AUDIO -> AccessType.MICROPHONE
+            AppOpsManager.OPSTR_FINE_LOCATION, 
+            AppOpsManager.OPSTR_COARSE_LOCATION -> AccessType.LOCATION
+            else -> AccessType.UNKNOWN
+        }
     }
-    */
 }
