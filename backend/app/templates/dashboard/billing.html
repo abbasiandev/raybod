@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Billing - Sentinel Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header mb-3">
+    <h1 class="page-title">Billing & Subscription</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h2 class="card-title">Current Plan</h2>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-center gap-2 mb-2">
+                    <span class="badge {% if current_user.plan == 'FEATURED' %}badge-info{% else %}badge-safe{% endif %}" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                        {{ current_user.plan }}
+                    </span>
+                </div>
+                <p class="text-secondary">
+                    {% if current_user.plan == 'FEATURED' %}
+                    You have full access to all premium features. Thank you for your support!
+                    {% else %}
+                    You are currently on the free plan. Upgrade to unlock real-time cloud analysis and zero-day protection.
+                    {% endif %}
+                </p>
+                
+                {% if request.query_params.get('status') == 'success' %}
+                <div class="badge badge-safe mt-2">Plan updated successfully!</div>
+                {% elif request.query_params.get('status') == 'failed' %}
+                <div class="badge badge-danger mt-2">Payment failed or cancelled.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h2 class="card-title">Upgrade Protection</h2>
+            </div>
+            <div class="card-body">
+                {% if current_user.plan == 'FREEMIUM' %}
+                <form action="/dashboard/billing/checkout" method="POST">
+                    <input type="hidden" name="plan" value="FEATURED">
+                    <button type="submit" class="btn btn-primary w-100">
+                        Upgrade to FEATURED - $4.99/mo
+                    </button>
+                </form>
+                {% else %}
+                <form action="/dashboard/billing/checkout" method="POST">
+                    <input type="hidden" name="plan" value="FREEMIUM">
+                    <button type="submit" class="btn btn-secondary w-100">
+                        Downgrade to FREEMIUM
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h2 class="card-title">Feature Comparison</h2>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>Freemium</th>
+                    <th>Featured</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>On-Device ML Scanning</td>
+                    <td><span class="text-success">✓</span></td>
+                    <td><span class="text-success">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Real-time Cloud Analysis</td>
+                    <td><span class="text-danger">✗</span></td>
+                    <td><span class="text-success">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Unlimited Background Scans</td>
+                    <td><span class="text-danger">✗</span></td>
+                    <td><span class="text-success">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Priority Queue</td>
+                    <td><span class="text-danger">✗</span></td>
+                    <td><span class="text-success">✓</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

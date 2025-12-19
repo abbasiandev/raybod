@@ -12,7 +12,8 @@ fun CachedRiskEntity.toDomain(): RiskAssessment {
         description = this.description,
         timestamp = this.timestamp,
         heuristicsUsed = this.heuristicsUsed,
-        ensembleMetadata = this.ensembleMetadata
+        ensembleMetadata = this.ensembleMetadata,
+        drebinFeatures = this.drebinFeatures
     )
 }
 
@@ -31,6 +32,7 @@ fun RiskAssessment.toEntity(
         lastUpdateTime = lastUpdateTime,
         heuristicsUsed = this.heuristicsUsed,
         ensembleMetadata = this.ensembleMetadata,
-        syncStatus = syncStatus.name
+        syncStatus = syncStatus.name,
+        drebinFeatures = this.drebinFeatures
     )
 }

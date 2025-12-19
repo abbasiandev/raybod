@@ -92,12 +92,26 @@ class ThreatRepositoryImpl @Inject constructor(
             )
             val response = api.analyzeApp(dto)
             
+            val drebin = response.drebinFeatures?.let {
+                com.codekhoda.domain.model.DrebinFeatures(
+                    s1Hardware = it.s1Hardware,
+                    s2RequestedPermissions = it.s2RequestedPermissions,
+                    s3AppComponents = it.s3AppComponents,
+                    s4FilteredIntents = it.s4FilteredIntents,
+                    s5RestrictedApis = it.s5RestrictedApis,
+                    s6UsedPermissions = it.s6UsedPermissions,
+                    s7SuspiciousApis = it.s7SuspiciousApis,
+                    s8NetworkAddresses = it.s8NetworkAddresses
+                )
+            } ?: com.codekhoda.domain.model.DrebinFeatures()
+
             RiskAssessment(
                 packageName = response.packageName,
                 riskLevel = try { RiskLevel.valueOf(response.riskLevel) } catch (e: Exception) { RiskLevel.UNKNOWN },
                 threatType = response.threatType,
                 description = response.description,
-                heuristicsUsed = response.heuristicsUsed
+                heuristicsUsed = response.heuristicsUsed,
+                drebinFeatures = drebin
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -144,12 +158,26 @@ class ThreatRepositoryImpl @Inject constructor(
                 val response = api.batchScan(com.codekhoda.data.remote.dto.BatchScanRequestDto(dtos))
                 
                 return response.results.map { res ->
+                    val drebin = res.drebinFeatures?.let {
+                        com.codekhoda.domain.model.DrebinFeatures(
+                            s1Hardware = it.s1Hardware,
+                            s2RequestedPermissions = it.s2RequestedPermissions,
+                            s3AppComponents = it.s3AppComponents,
+                            s4FilteredIntents = it.s4FilteredIntents,
+                            s5RestrictedApis = it.s5RestrictedApis,
+                            s6UsedPermissions = it.s6UsedPermissions,
+                            s7SuspiciousApis = it.s7SuspiciousApis,
+                            s8NetworkAddresses = it.s8NetworkAddresses
+                        )
+                    } ?: com.codekhoda.domain.model.DrebinFeatures()
+
                     val assessment = RiskAssessment(
                         packageName = res.packageName,
                         riskLevel = try { RiskLevel.valueOf(res.riskLevel) } catch (e: Exception) { RiskLevel.UNKNOWN },
                         threatType = res.threatType,
                         description = res.description,
-                        heuristicsUsed = res.heuristicsUsed
+                        heuristicsUsed = res.heuristicsUsed,
+                        drebinFeatures = drebin
                     )
                     // Cache results
                     riskDao.insertRisk(assessment.toEntity(

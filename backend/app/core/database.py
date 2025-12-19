@@ -129,7 +129,8 @@ def init_db(seed=True):
                     username="admin",
                     hashed_password=hashed_password,
                     role_id=super_admin_role.id,
-                    is_active=True
+                    is_active=True,
+                    plan="FEATURED"
                 )
                 db.add(admin_user)
                 db.commit()

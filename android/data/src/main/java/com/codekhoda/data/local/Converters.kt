@@ -26,4 +26,14 @@ class Converters {
         val mapType = object : TypeToken<Map<String, Float>>() {}.type
         return Gson().fromJson(value, mapType)
     }
+
+    @TypeConverter
+    fun fromDrebinFeatures(value: com.codekhoda.domain.model.DrebinFeatures): String {
+        return Gson().toJson(value)
+    }
+
+    @TypeConverter
+    fun toDrebinFeatures(value: String): com.codekhoda.domain.model.DrebinFeatures {
+        return Gson().fromJson(value, com.codekhoda.domain.model.DrebinFeatures::class.java)
+    }
 }

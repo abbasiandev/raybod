@@ -8,7 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -24,6 +27,9 @@ import com.codekhoda.presentation.theme.*
 
 @Composable
 fun PremiumScreen() {
+    val context = LocalContext.current
+    val billingUrl = "http://10.0.2.2:8000/dashboard/billing/" // Emulator access to localhost
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -220,7 +226,10 @@ fun PremiumScreen() {
         // CTA Button
         CyberButton(
             text = "START FREE TRIAL",
-            onClick = { /* TODO: Implement Billing */ },
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(billingUrl))
+                context.startActivity(intent)
+            },
             variant = ButtonVariant.GRADIENT,
             modifier = Modifier.fillMaxWidth()
         )

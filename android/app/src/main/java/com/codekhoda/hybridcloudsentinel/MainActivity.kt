@@ -21,6 +21,7 @@ import com.codekhoda.presentation.components.MainLayout
 import com.codekhoda.presentation.onboarding.OnboardingScreen
 import com.codekhoda.presentation.onboarding.OnboardingViewModel
 import com.codekhoda.presentation.permissions.PermissionDashboardScreen
+import com.codekhoda.presentation.network.NetworkDashboardScreen
 import com.codekhoda.presentation.paywall.PremiumScreen
 import com.codekhoda.presentation.scan.ScanScreen
 import com.codekhoda.presentation.theme.HybridCloudSentinelTheme
@@ -51,6 +52,7 @@ class MainActivity : ComponentActivity() {
                                 popUpTo("scan") { inclusive = true }
                             }
                         },
+                        onNavigateToNetwork = { navController.navigate("network") },
                         onNavigateToSecurity = { navController.navigate("security") },
                         onNavigateToAbout = { navController.navigate("about") },
                         onNavigateToPremium = { navController.navigate("premium") },
@@ -66,6 +68,9 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToSecurity = { navController.navigate("security") },
                                     onNavigateToPremium = { navController.navigate("premium") }
                                 )
+                            }
+                            composable("network") {
+                                NetworkDashboardScreen()
                             }
                             composable("security") {
                                 PermissionDashboardScreen()

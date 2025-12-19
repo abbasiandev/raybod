@@ -3,9 +3,12 @@ package com.codekhoda.data.di
 import android.content.Context
 import androidx.room.Room
 import com.codekhoda.data.local.AppDatabase
+import com.codekhoda.data.local.dao.NetworkDao
 import com.codekhoda.data.local.dao.RiskDao
+import com.codekhoda.data.repository.NetworkRepositoryImpl
 import com.codekhoda.data.repository.ThreatRepositoryImpl
 import com.codekhoda.data.repository.UserPreferencesRepositoryImpl
+import com.codekhoda.domain.repository.NetworkRepository
 import com.codekhoda.domain.repository.ThreatRepository
 import com.codekhoda.domain.repository.UserPreferencesRepository
 import dagger.Module
@@ -35,8 +38,19 @@ object DataModule {
     }
 
     @Provides
+    fun provideNetworkDao(db: AppDatabase): NetworkDao {
+        return db.networkDao()
+    }
+
+    @Provides
     @Singleton
     fun provideThreatRepository(repository: ThreatRepositoryImpl): ThreatRepository {
+        return repository
+    }
+
+    @Provides
+    @Singleton
+    fun provideNetworkRepository(repository: NetworkRepositoryImpl): NetworkRepository {
         return repository
     }
 

@@ -31,4 +31,10 @@ interface CloudBrainApi {
 
     @GET("api/v1/models/download/{version}")
     suspend fun downloadModel(@Path("version") version: String): ResponseBody
+
+    @GET("api/v1/auth/me")
+    suspend fun getCurrentUser(): UserDto
+
+    @POST("api/v1/network/analyze")
+    suspend fun analyzeNetwork(@Body request: NetworkAnalysisRequestDto): NetworkAnalysisResultDto
 }

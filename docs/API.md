@@ -48,158 +48,42 @@ Full endpoint: {base_url}/api/v1/{endpoint}
 
 ## Authentication
 
-> **Note**: Authentication is planned for production but not yet implemented in MVP.
+Authentication is implemented for all non-public endpoints.
 
-Future implementation will use:
-- API Key in header: `X-API-Key: your-api-key`
-- JWT tokens for premium users
+- **API Key**: Required for device interaction. Header: `X-API-Key: your-api-key`
+- **JWT Auth**: Required for admin dashboard and user-specific data. Header: `Authorization: Bearer <token>`
 
 ---
 
 ## Endpoints
 
-### Health Check
+### 🛡️ Scan Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/scan/analyze` | Submit app for analysis (Rate-limited) |
+| `GET` | `/api/v1/scan/history` | Get recent scan logs |
 
-Check if the API is running.
+### 🧠 Model & ML Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/models/latest` | Get metadata for the latest TFLite model |
+| `GET` | `/api/v1/models/download/{version}` | Download specific model version |
+| `POST` | `/api/v1/models/retrain` | Trigger automated model retraining |
 
-```http
-GET /health
-```
+### 👤 User & Subscription Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/auth/login` | Authenticate and get JWT |
+| `GET` | `/api/v1/auth/me` | Get current user info (including `plan`) |
+| `POST` | `/dashboard/billing/checkout` | Create a mock payment session |
+| `POST` | `/dashboard/billing/verify` | Verify mock payment result |
 
-**Response:**
-```json
-{
-    "status": "healthy",
-    "version": "1.0.0",
-    "timestamp": "2024-01-15T10:30:00Z"
-}
-```
-
----
-
-### Scan App
-
-Submit app metadata for threat analysis.
-
-```http
-POST /api/v1/scan
-Content-Type: application/json
-```
-
-**Request Body:**
-```json
-{
-    "package_name": "com.example.app",
-    "version_name": "1.0.0",
-    "version_code": 1,
-    "signature_hash": "a1b2c3d4e5f6...",
-    "permissions": [
-        "android.permission.INTERNET",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-    ],
-    "install_source": "com.android.vending",
-    "first_install_time": 1705312800000,
-    "last_update_time": 1705312800000
-}
-```
-
-**Response (200 OK):**
-```json
-{
-    "package_name": "com.example.app",
-    "risk_level": "HIGH",
-    "risk_score": 85,
-    "threats_detected": [
-        {
-            "type": "SPYWARE_PERMISSIONS",
-            "severity": "HIGH",
-            "description": "App requests camera, microphone, and internet permissions - typical spyware pattern",
-            "recommendation": "Uninstall unless you trust this app"
-        }
-    ],
-    "analysis_timestamp": "2024-01-15T10:30:00Z",
-    "cached": false
-}
-```
-
-**Risk Levels:**
-| Level | Score Range | Description |
-|-------|------------|-------------|
-| `SAFE` | 0-20 | No threats detected |
-| `LOW` | 21-40 | Minor concerns |
-| `MEDIUM` | 41-60 | Moderate risk |
-| `HIGH` | 61-80 | Significant threats |
-| `CRITICAL` | 81-100 | Immediate danger |
-
----
-
-### Get Cached Result
-
-Retrieve a previously analyzed app's result by signature hash.
-
-```http
-GET /api/v1/scan/{signature_hash}
-```
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `signature_hash` | string | SHA-256 hash of app signature |
-
-**Response (200 OK):**
-```json
-{
-    "package_name": "com.example.app",
-    "risk_level": "SAFE",
-    "risk_score": 10,
-    "threats_detected": [],
-    "analysis_timestamp": "2024-01-14T08:00:00Z",
-    "cached": true
-}
-```
-
-**Response (404 Not Found):**
-```json
-{
-    "detail": "No analysis found for this signature"
-}
-```
-
----
-
-### Batch Scan (Planned)
-
-Submit multiple apps for analysis in one request.
-
-```http
-POST /api/v1/scan/batch
-Content-Type: application/json
-```
-
-**Request Body:**
-```json
-{
-    "apps": [
-        { /* app metadata 1 */ },
-        { /* app metadata 2 */ },
-        { /* app metadata 3 */ }
-    ]
-}
-```
-
-**Response:**
-```json
-{
-    "results": [
-        { /* scan result 1 */ },
-        { /* scan result 2 */ },
-        { /* scan result 3 */ }
-    ],
-    "total_scanned": 3,
-    "high_risk_count": 1
-}
-```
+### 📊 Admin & Analytics Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/analytics/overview` | Aggregate threat statistics |
+| `GET` | `/api/v1/devices/list` | List registered devices |
+| `POST` | `/api/v1/allowlist/add` | Add package to global allowlist |
 
 ---
 

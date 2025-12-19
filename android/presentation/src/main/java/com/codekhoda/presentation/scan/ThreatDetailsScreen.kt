@@ -5,14 +5,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.codekhoda.domain.model.RiskAssessment
@@ -32,7 +29,7 @@ fun ThreatDetailsScreen(
         contentAlignment = Alignment.Center
     ) {
         GlowingCard(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f),
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.95f),
             glowColor = getRiskColor(assessment.riskLevel),
             glowIntensity = 0.5f,
             cornerRadius = 24.dp
@@ -69,9 +66,9 @@ fun ThreatDetailsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Divider(color = getRiskColor(assessment.riskLevel).copy(alpha = 0.3f))
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Threat Description
                 Text(
@@ -86,33 +83,66 @@ fun ThreatDetailsScreen(
                     color = TextPrimary
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Heuristics / Permissions
-                if (assessment.heuristicsUsed.isNotEmpty()) {
-                    Text(
-                        text = "DETECTED VECTORS",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = TextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        items(assessment.heuristicsUsed) { vector ->
-                            VectorItem(vector, getRiskColor(assessment.riskLevel))
-                        }
+                // DREBIN Explainability
+                Text(
+                    text = "DREBIN FORENSICS (EXPLAINABILITY)",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    item {
+                        DrebinCategoryView(
+                            "S2: Requested Permissions", 
+                            assessment.drebinFeatures.s2RequestedPermissions.filter { it.contains("android.permission.") }
+                                .map { it.substringAfterLast('.') },
+                            NeonCyan
+                        )
                     }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
-                    if (assessment.riskLevel == RiskLevel.SAFE) {
-                        EmptyStateSafe()
+                    item {
+                        DrebinCategoryView(
+                            "S7: Suspicious Patterns", 
+                            assessment.drebinFeatures.s7SuspiciousApis, 
+                            NeonPink
+                        )
+                    }
+                    item {
+                        DrebinCategoryView(
+                            "S5: Restricted APIs", 
+                            assessment.drebinFeatures.s5RestrictedApis, 
+                            NeonCyan
+                        )
+                    }
+                    item {
+                        DrebinCategoryView(
+                            "S8: Network Analysis", 
+                            assessment.drebinFeatures.s8NetworkAddresses, 
+                            Color.Yellow
+                        )
+                    }
+                    item {
+                        DrebinCategoryView(
+                            "S3: App Components", 
+                            assessment.drebinFeatures.s3AppComponents, 
+                            TextSecondary
+                        )
+                    }
+                    item {
+                        DrebinCategoryView(
+                            "S1: Hardware Access", 
+                            assessment.drebinFeatures.s1Hardware.map { it.substringAfterLast('.') }, 
+                            Color.Green
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Action Buttons
                 Row(
@@ -142,62 +172,45 @@ fun ThreatDetailsScreen(
 }
 
 @Composable
+fun DrebinCategoryView(title: String, features: List<String>, color: Color) {
+    if (features.isEmpty()) return
+    
+    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = color.copy(alpha = 0.7f),
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        features.forEach { feature ->
+            VectorItem(feature, color)
+        }
+    }
+}
+
+@Composable
 fun VectorItem(text: String, color: Color) {
     GlassCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
         cornerRadius = 8.dp
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Warning,
                 contentDescription = null,
                 tint = color.copy(alpha = 0.8f),
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(14.dp)
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = text,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = TextPrimary.copy(alpha = 0.9f)
             )
         }
     }
-}
-
-@Composable
-fun EmptyStateSafe() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = Icons.Default.Lock,
-            contentDescription = null,
-            tint = SafeGreen.copy(alpha = 0.3f),
-            modifier = Modifier.size(64.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "System Integrity Verified",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
-        )
-    }
-}
-
-private fun getRiskColor(level: RiskLevel): Color = when (level) {
-    RiskLevel.SAFE -> SafeGreen
-    RiskLevel.LOW -> NeonCyan
-    RiskLevel.MEDIUM -> WarningOrange
-    RiskLevel.HIGH -> AlertRed
-    RiskLevel.CRITICAL -> CriticalMagenta
-    RiskLevel.UNKNOWN -> TextMuted
-}
-
-private fun getRiskIcon(level: RiskLevel): ImageVector = when (level) {
-    RiskLevel.SAFE -> Icons.Default.CheckCircle
-    else -> Icons.Default.Warning
 }

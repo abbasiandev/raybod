@@ -22,12 +22,23 @@ class AppMetadata(BaseModel):
     last_update_time: Optional[int] = None
     ensemble_metadata: Optional[Dict[str, float]] = None
     
+class DrebinFeatures(BaseModel):
+    s1_hardware: List[str] = []
+    s2_requested_permissions: List[str] = []
+    s3_app_components: List[str] = []
+    s4_filtered_intents: List[str] = []
+    s5_restricted_apis: List[str] = []
+    s6_used_permissions: List[str] = []
+    s7_suspicious_apis: List[str] = []
+    s8_network_addresses: List[str] = []
+
 class ScanResult(BaseModel):
     package_name: str
     risk_level: RiskLevel
     threat_type: str = ""
     description: str
     heuristics_used: List[str] = []
+    drebin_features: Optional[DrebinFeatures] = None
 
 class BatchScanRequest(BaseModel):
     packages: List[AppMetadata]

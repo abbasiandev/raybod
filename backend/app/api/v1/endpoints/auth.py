@@ -33,6 +33,7 @@ class UserResponse(BaseModel):
     id: int
     username: str
     role: str
+    plan: str
     permissions: dict
     is_active: bool
     
@@ -136,6 +137,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         id=current_user.id,
         username=current_user.username,
         role=current_user.role.name,
+        plan=current_user.plan,
         permissions=current_user.role.permissions,
         is_active=current_user.is_active
     )

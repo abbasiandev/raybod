@@ -1,88 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hybrid Cloud Sentinel | Next-Gen Mobile Defense</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>CodeKhoda Sentinel - Next-Gen Mobile Security</title>
     <link rel="stylesheet" href="/static/css/landing.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
-
 <body>
-    <header>
-        <div class="logo">Hybrid Cloud Sentinel</div>
-        <nav>
-            <a href="#features">Features</a>
-            <a href="#pricing">Pricing</a>
-            <a href="/dashboard/login">Login</a>
-        </nav>
-    </header>
-
     <section class="hero">
-        <h1>Defense Reimagined.</h1>
-        <p>Advanced AI-driven mobile security that works offline and scales in the cloud. Protect your organization from
-            zero-day threats.</p>
-        <div class="cta-buttons">
-            <a href="#pricing" class="btn">Get Protected</a>
-            <a href="/dashboard/" class="btn btn-outline">View Demo</a>
+        <h1 class="hero-title">CODEKHODA SENTINEL</h1>
+        <p class="hero-subtitle">Advanced mobile threat defense powered by Hybrid AI. Protect your devices with on-device intelligence and cloud-scale analysis.</p>
+        <div style="margin-top: 2rem;">
+            <a href="/dashboard/login" class="btn btn-primary" style="width: auto; padding: 15px 40px;">Launch Dashboard</a>
         </div>
     </section>
 
-    <section id="features" class="features">
+    <section class="pricing">
         <div class="card">
-            <h3>🤖 On-Device AI</h3>
-            <p>Real-time threat detection powered by TensorFlow Lite. No internet connection required for core
-                protection.</p>
+            <h3>FREEMIUM</h3>
+            <div class="price">$0<span>/mo</span></div>
+            <p>Essential protection for every user.</p>
+            <ul class="features">
+                <li>On-Device ML Scanning</li>
+                <li>Basic Threat Reports</li>
+                <li>Manual Scans (Once Daily)</li>
+                <li>Community Support</li>
+            </ul>
+            <a href="/dashboard/login" class="btn btn-primary">Start for Free</a>
         </div>
-        <div class="card">
-            <h3>☁️ Cloud Intelligence</h3>
-            <p>Deep analysis and global threat feeds ensure you stay ahead of emerging malware campaigns.</p>
-        </div>
-        <div class="card">
-            <h3>🔍 Feature Forensics</h3>
-            <p>Understand WHY an app is dangerous. We analyze permissions, intents, and code patterns.</p>
+
+        <div class="card featured">
+            <h3>FEATURED</h3>
+            <div class="price">$4.99<span>/mo</span></div>
+            <p>Complete security for power users.</p>
+            <ul class="features">
+                <li>Everything in Freemium</li>
+                <li>Real-time Cloud Analysis</li>
+                <li>Unlimited Background Scans</li>
+                <li>Zero-Day Threat Protection</li>
+                <li>Priority Scanning Queue</li>
+                <li>Ad-Free Experience</li>
+            </ul>
+            <a href="/dashboard/login" class="btn btn-featured">Upgrade Now</a>
         </div>
     </section>
 
-    <section id="pricing" class="pricing">
-        <h2>Choose Your Shield</h2>
-        <p>Simple, transparent pricing for everyone.</p>
-
-        <div class="pricing-grid">
-            <div class="price-card">
-                <h3>Freemium</h3>
-                <div class="price">$0<span>/mo</span></div>
-                <ul class="features-list">
-                    <li>Unlimited On-Device Scanning</li>
-                    <li>Basic Threat Verdicts</li>
-                    <li>Community Support</li>
-                    <li>Limited Cloud Analysis (5/day)</li>
-                </ul>
-                <a href="#" class="btn btn-outline">Download Free</a>
-            </div>
-
-            <div class="price-card featured">
-                <h3>Featured / Premium</h3>
-                <div class="price">$4.99<span>/mo</span></div>
-                <ul class="features-list">
-                    <li>Everything in Free</li>
-                    <li><strong>Unlimited</strong> Cloud Analysis</li>
-                    <li>Detailed Forensic Reports</li>
-                    <li>Real-Time Background Protection</li>
-                    <li>Priority Support</li>
-                </ul>
-                <form action="/api/v1/public/checkout" method="POST">
-                    <input type="hidden" name="plan_id" value="premium_monthly">
-                    <button type="submit" class="btn">Subscribe Now</button>
-                </form>
-            </div>
-        </div>
-    </section>
-
-    <footer>
-        <p>&copy; 2025 Hybrid Cloud Sentinel. Secure by Design.</p>
+    <footer style="text-align: center; padding: 50px; color: var(--text-secondary); border-top: 1px solid var(--surface);">
+        <p>&copy; 2024 CodeKhoda Security Lab. All rights reserved.</p>
     </footer>
 </body>
-
 </html>

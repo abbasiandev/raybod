@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 fun MainLayout(
     title: String,
     onNavigateToScan: () -> Unit,
+    onNavigateToNetwork: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToSecurity: () -> Unit,
     onNavigateToPremium: () -> Unit,
@@ -53,6 +54,19 @@ fun MainLayout(
                     colors = NavigationDrawerItemDefaults.colors(
                         unselectedContainerColor = Color.Transparent,
                         selectedContainerColor = NeonCyan.copy(alpha = 0.1f)
+                    )
+                )
+                NavigationDrawerItem(
+                    label = { Text("Network Shield") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onNavigateToNetwork()
+                    },
+                    icon = { Icon(Icons.Default.Menu, contentDescription = null, tint = NeonCyan) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                    colors = NavigationDrawerItemDefaults.colors(
+                        unselectedContainerColor = Color.Transparent
                     )
                 )
                 NavigationDrawerItem(

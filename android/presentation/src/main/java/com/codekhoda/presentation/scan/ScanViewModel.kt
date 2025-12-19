@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.codekhoda.agent.scanner.PackageAnalyzer
 import com.codekhoda.domain.model.RiskAssessment
 import com.codekhoda.domain.model.RiskLevel
-import com.codekhoda.domain.usecase.ScanAppUseCase
+import com.codekhoda.domain.repository.UserPreferencesRepository
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,13 +21,15 @@ data class ScanUiState(
     val progress: Float = 0f,
     val currentApp: String = "",
     val results: List<RiskAssessment> = emptyList(),
-    val isLowSpeedMode: Boolean = false
+    val isLowSpeedMode: Boolean = false,
+    val error: String? = null
 )
 
 @HiltViewModel
 class ScanViewModel @Inject constructor(
     private val scanAppUseCase: ScanAppUseCase,
-    private val packageAnalyzer: PackageAnalyzer
+    private val packageAnalyzer: PackageAnalyzer,
+    private val userPrefs: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScanUiState())
@@ -40,11 +43,24 @@ class ScanViewModel @Inject constructor(
         scanJob?.cancel()
         
         scanJob = viewModelScope.launch {
+            val plan = userPrefs.userPlan.first()
+            val lastScan = userPrefs.lastScanTimestamp.first()
+            val currentTime = System.currentTimeMillis()
+            
+            // Limit Freemium to once every 24 hours
+            if (plan == "FREEMIUM" && (currentTime - lastScan) < 24 * 60 * 60 * 1000) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Freemium plan limited to one scan per 24h. Upgrade to Featured for unlimited scans!"
+                )
+                return@launch
+            }
+
             _uiState.value = _uiState.value.copy(
                 isScanning = true, 
                 progress = 0f, 
                 results = emptyList(),
-                isLowSpeedMode = lowSpeedMode
+                isLowSpeedMode = lowSpeedMode,
+                error = null
             )
             
             val apps = packageAnalyzer.getInstalledApps() // This is heavy, should be background
@@ -96,6 +112,7 @@ class ScanViewModel @Inject constructor(
                     currentApp = "Scan Complete",
                     results = sortedResults
                 )
+                userPrefs.setLastScanTimestamp(System.currentTimeMillis())
             }
         }
     }
