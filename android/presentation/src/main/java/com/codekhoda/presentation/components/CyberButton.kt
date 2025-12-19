@@ -36,7 +36,8 @@ fun CyberButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     glowColor: Color = NeonCyan,
-    variant: ButtonVariant = ButtonVariant.PRIMARY
+    variant: ButtonVariant = ButtonVariant.PRIMARY,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -114,7 +115,7 @@ fun CyberButton(
                 enabled = enabled,
                 onClick = onClick
             )
-            .padding(horizontal = 32.dp, vertical = 16.dp),
+            .padding(contentPadding),
         contentAlignment = Alignment.Center
     ) {
         Text(
