@@ -31,8 +31,10 @@ dependencies {
     
     // Services requirement
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.cardview)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.material)
 
     // Testing
     testImplementation(libs.junit)

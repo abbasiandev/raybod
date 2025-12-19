@@ -22,12 +22,16 @@ import com.codekhoda.presentation.theme.*
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.graphics.vector.ImageVector
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ThreatDetailsScreen(
     assessment: RiskAssessment,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -176,7 +180,13 @@ fun ThreatDetailsScreen(
                     if (assessment.riskLevel != RiskLevel.SAFE) {
                         CyberButton(
                             text = "UNINSTALL",
-                            onClick = { /* TODO: Implement Uninstall */ },
+                            onClick = { 
+                                val intent = Intent(Intent.ACTION_DELETE).apply {
+                                    data = Uri.parse("package:${assessment.packageName}")
+                                }
+                                context.startActivity(intent)
+                                onDismiss()
+                            },
                             variant = ButtonVariant.DANGER,
                             modifier = Modifier.weight(1.5f),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)

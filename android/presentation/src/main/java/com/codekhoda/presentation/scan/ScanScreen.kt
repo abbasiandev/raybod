@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +17,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.Image
+import androidx.core.graphics.drawable.toBitmap
+import android.content.pm.PackageManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.animation.*
+import androidx.compose.foundation.border
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +47,7 @@ import com.codekhoda.presentation.theme.*
 fun ScanScreen(
     viewModel: ScanViewModel = hiltViewModel(),
     permissionViewModel: PermissionViewModel = hiltViewModel(),
+    userPlan: String = "FREEMIUM",
     onNavigateToSecurity: () -> Unit,
     onNavigateToPremium: (() -> Unit)? = null
 ) {
@@ -44,233 +59,264 @@ fun ScanScreen(
     var showLowSpeedInfo by remember { mutableStateOf(false) }
     var showUpgradePrompt by remember { mutableStateOf(false) }
     var showResultsSheet by remember { mutableStateOf(false) }
+    var showRootInfo by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepBlack)
-    ) {
-        // Decorative Background Gradient
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = Color.Transparent
+    ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            NeonPurple.copy(alpha = 0.1f),
-                            DeepBlack
-                        ),
-                        radius = 800f
-                    )
-                )
-        )
-
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                .padding(padding)
+                .background(DeepBlack)
         ) {
-            item {
-                // Radar Visualization - More compact
-                RadarVisualization(
-                    modifier = Modifier.size(220.dp),
-                    isScanning = state.isScanning,
-                    progress = state.progress,
-                    scanPhase = determineScanPhase(state),
-                    threatCount = state.results.count { it.riskLevel == RiskLevel.HIGH || it.riskLevel == RiskLevel.CRITICAL }
-                )
-            }
+            // Decorative Background Gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                NeonPurple.copy(alpha = 0.1f),
+                                DeepBlack
+                            ),
+                            radius = 800f
+                        )
+                    )
+            )
 
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+            ) {
+                item {
+                    // Radar Visualization - More compact
+                    RadarVisualization(
+                        modifier = Modifier.size(220.dp),
+                        isScanning = state.isScanning,
+                        progress = state.progress,
+                        scanPhase = determineScanPhase(state),
+                        threatCount = state.results.count { it.riskLevel == RiskLevel.HIGH || it.riskLevel == RiskLevel.CRITICAL }
+                    )
+                }
 
-            item {
-                // Action Area
-                if (!state.isScanning) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        // Low Speed Mode Toggle
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Switch(
-                                checked = state.isLowSpeedMode,
-                                onCheckedChange = { viewModel.toggleLowSpeedMode() },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = NeonCyan,
-                                    checkedTrackColor = NeonCyan.copy(alpha = 0.5f),
-                                    uncheckedThumbColor = TextSecondary,
-                                    uncheckedTrackColor = DarkSurface
-                                ),
-                                modifier = Modifier.scale(0.7f)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Low Speed",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextSecondary
-                            )
-                            IconButton(
-                                onClick = { showLowSpeedInfo = true },
-                                modifier = Modifier.size(24.dp)
+                item { Spacer(modifier = Modifier.height(16.dp)) }
+
+                item {
+                    // Action Area
+                    if (!state.isScanning) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            // Low Speed Mode Toggle
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = "Info",
-                                    tint = NeonCyan.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(12.dp)
+                                Switch(
+                                    checked = state.isLowSpeedMode,
+                                    onCheckedChange = { viewModel.toggleLowSpeedMode() },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = NeonCyan,
+                                        checkedTrackColor = NeonCyan.copy(alpha = 0.5f),
+                                        uncheckedThumbColor = TextSecondary,
+                                        uncheckedTrackColor = DarkSurface
+                                    ),
+                                    modifier = Modifier.scale(0.7f)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Low Speed",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextSecondary
+                                )
+                                IconButton(
+                                    onClick = { showLowSpeedInfo = true },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Info",
+                                        tint = NeonCyan.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            CyberButton(
+                                text = if (state.results.isEmpty()) "INITIATE SYSTEM SCAN" else "RESCAN SYSTEM",
+                                onClick = { viewModel.startScan(state.isLowSpeedMode) },
+                                variant = ButtonVariant.PRIMARY,
+                                modifier = Modifier.fillMaxWidth(0.85f),
+                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                            )
+                            
+                            if (state.results.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                CyberButton(
+                                    text = "VIEW SCAN RESULTS",
+                                    onClick = { showResultsSheet = true },
+                                    variant = ButtonVariant.GRADIENT,
+                                    modifier = Modifier.fillMaxWidth(0.85f),
+                                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        CyberButton(
-                            text = if (state.results.isEmpty()) "INITIATE SYSTEM SCAN" else "RESCAN SYSTEM",
-                            onClick = { viewModel.startScan(state.isLowSpeedMode) },
-                            variant = ButtonVariant.PRIMARY,
-                            modifier = Modifier.fillMaxWidth(0.85f),
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-                        )
-                        
-                        if (state.results.isNotEmpty()) {
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            ScanningStatus(
+                                currentApp = state.currentApp,
+                                currentAppLabel = state.currentAppLabel,
+                                scannedApps = state.scannedApps,
+                                totalApps = state.totalApps
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            ScanningQueue(recentApps = state.recentApps)
+                            
                             Spacer(modifier = Modifier.height(12.dp))
                             CyberButton(
-                                text = "VIEW SCAN RESULTS",
-                                onClick = { showResultsSheet = true },
-                                variant = ButtonVariant.GRADIENT,
+                                text = "STOP SCAN",
+                                onClick = { viewModel.stopScan() },
+                                variant = ButtonVariant.SECONDARY,
                                 modifier = Modifier.fillMaxWidth(0.85f),
                                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                             )
                         }
                     }
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        ScanningStatus(state.currentApp)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        CyberButton(
-                            text = "STOP SCAN",
-                            onClick = { viewModel.stopScan() },
-                            variant = ButtonVariant.SECONDARY,
-                            modifier = Modifier.fillMaxWidth(0.85f),
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-                        )
-                    }
                 }
-            }
 
-            item { Spacer(modifier = Modifier.height(24.dp)) }
+                item { Spacer(modifier = Modifier.height(24.dp)) }
 
-            // Integrity Nudges
-            if (!state.isScanning) {
-                if (state.isRooted) {
-                    item {
-                        SecurityNudgeBanner(
-                            text = "Device is ROOTED. Integrity compromised.",
-                            onClick = {},
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                    }
-                }
-                if (vulnerablePermission != null) {
-                    item {
-                        SecurityNudgeBanner(
-                            text = "Enable ${vulnerablePermission.name} for protection.",
-                            onClick = onNavigateToSecurity,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        // Results Bottom Sheet
-        if (showResultsSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showResultsSheet = false },
-                sheetState = sheetState,
-                containerColor = DarkSurface,
-                scrimColor = Color.Black.copy(alpha = 0.7f)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "SCAN RESULTS",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = NeonCyan,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 2.sp
-                        )
-                        IconButton(onClick = { showResultsSheet = false }) {
-                            Icon(Icons.Default.Star, contentDescription = "Close", tint = TextSecondary)
-                        }
-                    }
-
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(
-                            items = state.results,
-                            key = { it.packageName }
-                        ) { result ->
-                            ResultItemCard(
-                                result = result,
-                                onClick = { 
-                                    selectedAssessment = result
-                                }
+                // Integrity Nudges
+                if (!state.isScanning) {
+                    if (state.isRooted) {
+                        item {
+                            SecurityNudgeBanner(
+                                text = "Device is ROOTED. Integrity compromised.",
+                                onClick = { showRootInfo = true },
+                                modifier = Modifier.padding(bottom = 12.dp)
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(32.dp))
+                    if (vulnerablePermission != null) {
+                        item {
+                            SecurityNudgeBanner(
+                                text = "Enable ${vulnerablePermission.name} for protection.",
+                                onClick = onNavigateToSecurity,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Results Bottom Sheet
+            if (showResultsSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showResultsSheet = false },
+                    sheetState = sheetState,
+                    containerColor = DarkSurface,
+                    scrimColor = Color.Black.copy(alpha = 0.7f)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "SCAN RESULTS",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = NeonCyan,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 2.sp
+                            )
+                            IconButton(onClick = { showResultsSheet = false }) {
+                                Icon(Icons.Default.Star, contentDescription = "Close", tint = TextSecondary)
+                            }
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(
+                                items = state.results,
+                                key = { it.packageName }
+                            ) { result ->
+                                ResultItemCard(
+                                    result = result,
+                                    onClick = { 
+                                        selectedAssessment = result
+                                    }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+            }
+
+            // Low Speed Info Dialog
+            if (showLowSpeedInfo) {
+                Dialog(onDismissRequest = { showLowSpeedInfo = false }) {
+                    LowSpeedInfoDialog(onDismiss = { showLowSpeedInfo = false })
+                }
+            }
+            
+            // Upgrade Prompt Dialog
+            if (showUpgradePrompt) {
+                Dialog(onDismissRequest = { showUpgradePrompt = false }) {
+                    UpgradePromptDialog(
+                        onDismiss = { showUpgradePrompt = false },
+                        onUpgrade = {
+                            showUpgradePrompt = false
+                            onNavigateToPremium?.invoke()
+                        }
+                    )
+                }
+            }
+
+            if (showRootInfo) {
+                Dialog(onDismissRequest = { showRootInfo = false }) {
+                    RootInfoDialog(onDismiss = { showRootInfo = false })
+                }
+            }
+            
+            // Details Logic
+            if (selectedAssessment != null) {
+                Dialog(onDismissRequest = { selectedAssessment = null }) {
+                    ThreatDetailsScreen(
+                        assessment = selectedAssessment!!,
+                        onDismiss = { selectedAssessment = null }
+                    )
                 }
             }
         }
-
-        // Low Speed Info Dialog
-        if (showLowSpeedInfo) {
-            Dialog(onDismissRequest = { showLowSpeedInfo = false }) {
-                LowSpeedInfoDialog(onDismiss = { showLowSpeedInfo = false })
-            }
-        }
-        
-        // Upgrade Prompt Dialog
-        if (showUpgradePrompt) {
-            Dialog(onDismissRequest = { showUpgradePrompt = false }) {
-                UpgradePromptDialog(
-                    onDismiss = { showUpgradePrompt = false },
-                    onUpgrade = {
-                        showUpgradePrompt = false
-                        onNavigateToPremium?.invoke()
-                    }
-                )
-            }
-        }
-        
-        // Details Logic
-        if (selectedAssessment != null) {
-            Dialog(onDismissRequest = { selectedAssessment = null }) {
-                ThreatDetailsScreen(
-                    assessment = selectedAssessment!!,
-                    onDismiss = { selectedAssessment = null }
-                )
-            }
+    }
+    
+    // Show error snackbar if exists
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
         }
     }
     
     // Show upgrade prompt after scan completes (first time only)
     LaunchedEffect(state.isScanning, state.results) {
-        if (!state.isScanning && state.results.isNotEmpty() && onNavigateToPremium != null) {
+        if (!state.isScanning && state.results.isNotEmpty() && onNavigateToPremium != null && userPlan != "PREMIUM") {
             // Show after 2 seconds delay
             kotlinx.coroutines.delay(2000)
             showUpgradePrompt = true
@@ -279,20 +325,147 @@ fun ScanScreen(
 }
 
 @Composable
-fun ScanningStatus(currentApp: String) {
+fun ScanningStatus(
+    currentApp: String,
+    currentAppLabel: String,
+    scannedApps: Int,
+    totalApps: Int
+) {
+    val context = LocalContext.current
+    val appIcon = remember(currentApp) {
+        try {
+            if (currentApp.isNotEmpty() && currentApp != "Scan Stopped" && currentApp != "Scan Complete") {
+                context.packageManager.getApplicationIcon(currentApp).toBitmap().asImageBitmap()
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(DarkSurface)
+                .border(1.dp, NeonCyan.copy(alpha = 0.5f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            if (appIcon != null) {
+                Image(
+                    bitmap = appIcon,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize().padding(12.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = NeonCyan.copy(alpha = 0.3f),
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         Text(
             text = "SCANNING PACKAGE",
             style = MaterialTheme.typography.labelSmall,
-            color = NeonCyan
+            color = NeonCyan,
+            letterSpacing = 2.sp
         )
+        
         Spacer(modifier = Modifier.height(4.dp))
+        
         Text(
-            text = currentApp.substringAfterLast('.'),
-            style = MaterialTheme.typography.bodyLarge,
+            text = currentAppLabel,
+            style = MaterialTheme.typography.titleMedium,
             color = TextPrimary,
+            maxLines = 1,
+            fontWeight = FontWeight.Bold
+        )
+        
+        Text(
+            text = currentApp,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextSecondary,
             maxLines = 1
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "$scannedApps",
+                style = MaterialTheme.typography.bodyMedium,
+                color = NeonCyan,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = " / $totalApps APPS",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+fun ScanningQueue(recentApps: List<Pair<String, String>>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = "PROCESS QUEUE",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextSecondary.copy(alpha = 0.7f),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        
+        recentApps.reversed().forEachIndexed { index, app ->
+            val alpha = 1f - (index * 0.2f)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
+                    .alpha(alpha.coerceAtLeast(0.2f)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(4.dp)
+                        .background(if (index == 0) NeonCyan else TextSecondary, CircleShape)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = app.second,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (index == 0) TextPrimary else TextSecondary,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f)
+                )
+                if (index == 0) {
+                    Text(
+                        text = "ANALYZING",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = NeonCyan,
+                        fontSize = 8.sp
+                    )
+                } else {
+                    Text(
+                        text = "OK",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SafeGreen.copy(alpha = 0.7f),
+                        fontSize = 8.sp
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -554,4 +727,81 @@ private fun UpgradeFeatureItem(text: String) {
             .padding(vertical = 4.dp),
         textAlign = TextAlign.Start
     )
+}
+
+@Composable
+fun RootInfoDialog(onDismiss: () -> Unit) {
+    GlowingCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        glowColor = AlertRed,
+        cornerRadius = 16.dp,
+        animated = true
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = AlertRed,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = "ROOT ACCESS DETECTED",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = AlertRed,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = "What does this mean?",
+                style = MaterialTheme.typography.titleMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Your device has been rooted, which means the Android security sandbox has been modified. This allows apps to access system files and data of other apps.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            BulletPointItem("Security protections can be bypassed by malware")
+            BulletPointItem("Sensitive data (passwords, banking) is at higher risk")
+            BulletPointItem("System stability may be compromised")
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = "⚠️ Recommendation: Use a non-rooted device for maximum security with Sentinel.",
+                style = MaterialTheme.typography.bodySmall,
+                color = WarningOrange,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            CyberButton(
+                text = "UNDERSTOOD",
+                onClick = onDismiss,
+                variant = ButtonVariant.DANGER,
+                glowColor = AlertRed,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }

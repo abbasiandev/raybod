@@ -14,11 +14,18 @@ async def landing_page(request: Request):
     """Render the public landing page."""
     return templates.TemplateResponse("landing.html", {"request": request})
 
+@router.get("/api/v1/public/pay")
+async def pay_redirect(mobile: bool = False):
+    """Helper to start checkout via GET."""
+    session_id = str(uuid.uuid4())
+    payment_sessions[session_id] = {"plan_id": "FEATURED", "status": "pending", "mobile": mobile}
+    return RedirectResponse(url=f"/payment/sandbox/{session_id}", status_code=303)
+
 @router.post("/api/v1/public/checkout")
-async def checkout(plan_id: str = Form(...)):
+async def checkout(plan_id: str = Form(...), mobile: bool = Form(False)):
     """Start a checkout session and redirect to sandbox."""
     session_id = str(uuid.uuid4())
-    payment_sessions[session_id] = {"plan_id": plan_id, "status": "pending"}
+    payment_sessions[session_id] = {"plan_id": plan_id, "status": "pending", "mobile": mobile}
     
     # Redirect to the sandbox payment page
     return RedirectResponse(url=f"/payment/sandbox/{session_id}", status_code=303)
@@ -31,7 +38,8 @@ async def payment_page(request: Request, session_id: str):
         
     return templates.TemplateResponse("sandbox_pay.html", {
         "request": request, 
-        "session_id": session_id
+        "session_id": session_id,
+        "mobile": payment_sessions[session_id].get("mobile", False)
     })
 
 @router.post("/api/v1/public/payment/process")
@@ -41,8 +49,13 @@ async def process_payment(session_id: str = Form(...), success: str = Form(...))
         raise HTTPException(status_code=404, detail="Session not found")
     
     is_success = success.lower() == "true"
+    is_mobile = payment_sessions[session_id].get("mobile", False)
     payment_sessions[session_id]["status"] = "paid" if is_success else "failed"
     
+    if is_mobile:
+        status_query = "success" if is_success else "failed"
+        return RedirectResponse(url=f"codekhoda://payment-result?status={status_query}", status_code=303)
+
     if is_success:
         # success logic (e.g., activate plan)
         return HTMLResponse(content="""

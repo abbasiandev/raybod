@@ -10,6 +10,7 @@ interface NetworkRepository {
     suspend fun analyzeFlows(flows: List<NetworkFlow>)
     suspend fun getLocalBlocklist(): List<String>
     suspend fun syncBlocklist()
+    fun clearActiveFlows()
 }
 
 

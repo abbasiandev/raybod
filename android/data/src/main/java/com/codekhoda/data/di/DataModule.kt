@@ -62,9 +62,32 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(): retrofit2.Retrofit {
+    fun provideGson(): com.google.gson.Gson {
+        return com.google.gson.Gson()
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): okhttp3.OkHttpClient {
+        val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
+            level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+        }
+        
+        return okhttp3.OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .addInterceptor(com.codekhoda.data.remote.interceptor.RetryInterceptor(maxRetries = 3))
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: okhttp3.OkHttpClient): retrofit2.Retrofit {
         return retrofit2.Retrofit.Builder()
             .baseUrl("https://codekhoda-sentinel-brain.liara.run/") // Live Liara Backend
+            .client(okHttpClient)
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()
     }

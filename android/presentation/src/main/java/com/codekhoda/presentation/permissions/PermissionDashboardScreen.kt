@@ -23,6 +23,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.codekhoda.presentation.components.*
 import com.codekhoda.presentation.theme.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 
 @Composable
 fun PermissionDashboardScreen(
@@ -30,6 +36,25 @@ fun PermissionDashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.checkPermissions()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        viewModel.checkPermissions()
+    }
+
     val grantedCount = uiState.permissions.count { it.isGranted }
     val totalCount = uiState.permissions.size
     val securityScore = if (totalCount > 0) (grantedCount.toFloat() / totalCount.toFloat() * 100).toInt() else 100
@@ -73,12 +98,26 @@ fun PermissionDashboardScreen(
             val vulnerablePermission = uiState.permissions.find { !it.isGranted }
             if (vulnerablePermission != null) {
                 item {
-                    SecurityNudgeBanner(text = "Enable ${vulnerablePermission.name} for full protection.")
+                    SecurityNudgeBanner(
+                        text = "Enable ${vulnerablePermission.name} for full protection.",
+                        onClick = {
+                            if (vulnerablePermission.permission.isNotEmpty()) {
+                                permissionLauncher.launch(vulnerablePermission.permission)
+                            }
+                        }
+                    )
                 }
             }
 
             items(uiState.permissions) { permission ->
-                PermissionItem(permission = permission)
+                PermissionItem(
+                    permission = permission,
+                    onRequestPermission = { perm ->
+                        if (perm.isNotEmpty()) {
+                            permissionLauncher.launch(perm)
+                        }
+                    }
+                )
             }
             
             item {
@@ -227,7 +266,10 @@ fun SecurityScoreHeader(score: Int) {
 }
 
 @Composable
-fun PermissionItem(permission: PermissionStatus) {
+fun PermissionItem(
+    permission: PermissionStatus,
+    onRequestPermission: (String) -> Unit
+) {
     val status = if (permission.isGranted) CardStatus.SAFE else CardStatus.NEUTRAL
     
     StatusCard(
@@ -265,7 +307,7 @@ fun PermissionItem(permission: PermissionStatus) {
             if (!permission.isGranted) {
                 CyberButton(
                     text = "FIX",
-                    onClick = { /* Action handled by ComponentActivity in real app */ },
+                    onClick = { onRequestPermission(permission.permission) },
                     variant = ButtonVariant.DANGER,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 )

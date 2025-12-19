@@ -16,6 +16,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
+import com.codekhoda.domain.repository.UserPreferencesRepository
 import com.codekhoda.presentation.about.AboutScreen
 import com.codekhoda.presentation.components.MainLayout
 import com.codekhoda.presentation.onboarding.OnboardingScreen
@@ -26,27 +28,35 @@ import com.codekhoda.presentation.paywall.PremiumScreen
 import com.codekhoda.presentation.scan.ScanScreen
 import com.codekhoda.presentation.theme.HybridCloudSentinelTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
+
     private val prefs: SharedPreferences by lazy {
         getSharedPreferences("sentinel_prefs", Context.MODE_PRIVATE)
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleIntent(intent)
         setContent {
             HybridCloudSentinelTheme {
                 val navController = rememberNavController()
                 val onboardingViewModel: OnboardingViewModel = hiltViewModel()
                 val onboardingState by onboardingViewModel.uiState.collectAsState()
+                val userPlan by userPreferencesRepository.userPlan.collectAsState("FREEMIUM")
 
                 if (!onboardingState.isOnboardingCompleted) {
                     OnboardingScreen(onComplete = { onboardingViewModel.completeOnboarding() })
                 } else {
                     MainLayout(
                         title = "Sentinel Dashboard",
+                        userPlan = userPlan,
                         onNavigateToScan = {
                             navController.navigate("scan") {
                                 popUpTo("scan") { inclusive = true }
@@ -65,6 +75,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             composable("scan") {
                                 ScanScreen(
+                                    userPlan = userPlan,
                                     onNavigateToSecurity = { navController.navigate("security") },
                                     onNavigateToPremium = { navController.navigate("premium") }
                                 )
@@ -82,6 +93,24 @@ class MainActivity : ComponentActivity() {
                                 PremiumScreen()
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: android.content.Intent?) {
+        intent?.data?.let { uri ->
+            if (uri.scheme == "codekhoda" && uri.host == "payment-result") {
+                val status = uri.getQueryParameter("status")
+                if (status == "success") {
+                    lifecycleScope.launch {
+                        userPreferencesRepository.setUserPlan("PREMIUM")
                     }
                 }
             }

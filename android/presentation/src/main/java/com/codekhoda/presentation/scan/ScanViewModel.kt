@@ -21,6 +21,10 @@ data class ScanUiState(
     val isScanning: Boolean = false,
     val progress: Float = 0f,
     val currentApp: String = "",
+    val currentAppLabel: String = "",
+    val totalApps: Int = 0,
+    val scannedApps: Int = 0,
+    val recentApps: List<Pair<String, String>> = emptyList(), // Pair<PackageName, AppLabel>
     val results: List<RiskAssessment> = emptyList(),
     val isLowSpeedMode: Boolean = false,
     val isRooted: Boolean = false,
@@ -83,26 +87,40 @@ class ScanViewModel @Inject constructor(
                 progress = 0f, 
                 results = emptyList(),
                 isLowSpeedMode = lowSpeedMode,
-                error = null
+                error = null,
+                totalApps = 0,
+                scannedApps = 0,
+                recentApps = emptyList(),
+                currentApp = "",
+                currentAppLabel = "Preparing..."
             )
             
             val apps = packageAnalyzer.getInstalledApps() // This is heavy, should be background
             val total = apps.size
             val results = mutableListOf<RiskAssessment>()
 
+            _uiState.value = _uiState.value.copy(totalApps = total)
+
             apps.forEachIndexed { index, app ->
                 // Check if the coroutine is still active (not cancelled)
                 if (!isActive) {
                     _uiState.value = _uiState.value.copy(
                         isScanning = false,
-                        currentApp = "Scan Stopped"
+                        currentApp = "Scan Stopped",
+                        currentAppLabel = "Cancelled"
                     )
                     return@launch
                 }
                 
+                val currentRecentApps = (_uiState.value.recentApps + (app.packageName to app.appLabel))
+                    .takeLast(5)
+
                 _uiState.value = _uiState.value.copy(
                     progress = index / total.toFloat(),
-                    currentApp = app.packageName
+                    currentApp = app.packageName,
+                    currentAppLabel = app.appLabel,
+                    scannedApps = index + 1,
+                    recentApps = currentRecentApps
                 )
                 
                 // Actual scan (calls Cloud or Cache)
@@ -133,6 +151,7 @@ class ScanViewModel @Inject constructor(
                     isScanning = false,
                     progress = 1f,
                     currentApp = "Scan Complete",
+                    currentAppLabel = "Finished",
                     results = sortedResults
                 )
                 
@@ -155,7 +174,8 @@ class ScanViewModel @Inject constructor(
         scanJob = null
         _uiState.value = _uiState.value.copy(
             isScanning = false,
-            currentApp = "Scan Stopped"
+            currentApp = "Scan Stopped",
+            currentAppLabel = "Cancelled"
         )
     }
     
@@ -163,5 +183,9 @@ class ScanViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             isLowSpeedMode = !_uiState.value.isLowSpeedMode
         )
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
     }
 }

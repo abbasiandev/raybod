@@ -45,9 +45,73 @@ class ScanViewModelTest {
         
         every { userPrefs.userPlan } returns flowOf("PREMIUM")
         every { userPrefs.lastScanTimestamp } returns flowOf(0L)
+        every { userPrefs.dailyScanCount } returns flowOf(0)
         coEvery { userPrefs.setLastScanTimestamp(any()) } returns Unit
+        coEvery { userPrefs.setDailyScanCount(any()) } returns Unit
         
         viewModel = ScanViewModel(scanAppUseCase, packageAnalyzer, userPrefs)
+    }
+
+    @Test
+    fun `freemium user is limited to 3 scans per day`() = runTest {
+        // Given
+        every { userPrefs.userPlan } returns flowOf("FREEMIUM")
+        every { userPrefs.dailyScanCount } returns flowOf(3)
+        // Set timestamp to today to simulate same day
+        every { userPrefs.lastScanTimestamp } returns flowOf(System.currentTimeMillis())
+
+        // When
+        viewModel.startScan()
+        advanceUntilIdle()
+
+        // Then
+        val state = viewModel.uiState.first()
+        assertFalse(state.isScanning)
+        assertTrue(state.error?.contains("limit reached") == true)
+    }
+
+    @Test
+    fun `premium user has no scan limit`() = runTest {
+        // Given
+        every { userPrefs.userPlan } returns flowOf("PREMIUM")
+        every { userPrefs.dailyScanCount } returns flowOf(10) // Already scanned 10 times
+        every { userPrefs.lastScanTimestamp } returns flowOf(System.currentTimeMillis())
+        
+        val apps = listOf(AppPackage("com.app1", 1, signature = "hash1"))
+        coEvery { packageAnalyzer.getInstalledApps() } returns apps
+        coEvery { scanAppUseCase(any()) } returns RiskAssessment("com.app1", RiskLevel.SAFE, "Clean")
+
+        // When
+        viewModel.startScan()
+        advanceUntilIdle()
+
+        // Then
+        val state = viewModel.uiState.first()
+        assertTrue(state.error == null)
+        assertEquals(1, state.results.size)
+    }
+
+    @Test
+    fun `freemium limit resets on new day`() = runTest {
+        // Given
+        every { userPrefs.userPlan } returns flowOf("FREEMIUM")
+        every { userPrefs.dailyScanCount } returns flowOf(3)
+        // Set timestamp to yesterday
+        val yesterday = System.currentTimeMillis() - 24 * 60 * 60 * 1000
+        every { userPrefs.lastScanTimestamp } returns flowOf(yesterday)
+        
+        val apps = listOf(AppPackage("com.app1", 1, signature = "hash1"))
+        coEvery { packageAnalyzer.getInstalledApps() } returns apps
+        coEvery { scanAppUseCase(any()) } returns RiskAssessment("com.app1", RiskLevel.SAFE, "Clean")
+
+        // When
+        viewModel.startScan()
+        advanceUntilIdle()
+
+        // Then
+        val state = viewModel.uiState.first()
+        assertTrue(state.error == null)
+        assertEquals(1, state.results.size)
     }
 
     @After

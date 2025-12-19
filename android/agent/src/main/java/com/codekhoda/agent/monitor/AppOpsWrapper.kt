@@ -19,7 +19,8 @@ data class SimpleOpData(
     val op: String,
     val timestamp: Long,
     val duration: Long,
-    val isForeground: Boolean
+    val isForeground: Boolean,
+    val isRunning: Boolean = false
 )
 
 @Singleton
@@ -27,68 +28,107 @@ class AppOpsWrapperImpl @Inject constructor(
     private val context: Context
 ) : AppOpsWrapper {
 
-    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
-
     override fun getRecentOps(durationMs: Long, targetOps: Array<String>): List<SimpleOpData> {
-        val manager = appOpsManager ?: return emptyList()
-        val ops = manager.getPackagesForOps(targetOps) ?: return emptyList()
+        val appOpsManager = context.getSystemService(AppOpsManager::class.java) ?: return emptyList()
         val result = mutableListOf<SimpleOpData>()
         val now = System.currentTimeMillis()
 
-        ops.forEach { pkgOps ->
-            val packageName = pkgOps.packageName
-            pkgOps.ops.forEach { opEntry ->
-                val lastAccessTime = getLastAccessTimeCompat(opEntry)
+        try {
+            // Reflectively call getPackagesForOps to avoid compile-time dependency on API 29+ symbols
+            // which appear to be missing in the current build environment's android.jar
+            val method = appOpsManager.javaClass.getMethod("getPackagesForOps", Array<String>::class.java)
+            val packages = method.invoke(appOpsManager, targetOps) as? List<*> ?: return emptyList()
+
+            for (pkgOps in packages) {
+                if (pkgOps == null) continue
                 
-                if (now - lastAccessTime < durationMs) {
-                    // opEntry.opStr available in API 29. Fallback handled or assumed for compilation? 
-                    // opStr is property.
-                    val opStr = try { opEntry.opStr } catch (e: NoSuchFieldError) { "" }
+                // pkgOps is AppOpsManager.PackageOps
+                val pkgName = pkgOps.javaClass.getMethod("getPackageName").invoke(pkgOps) as String
+                val ops = pkgOps.javaClass.getMethod("getOps").invoke(pkgOps) as? List<*> ?: continue
+
+                for (opEntry in ops) {
+                    if (opEntry == null) continue
                     
-                    if (opStr.isNotEmpty()) {
-                         result.add(SimpleOpData(
-                            packageName = packageName,
-                            op = opStr,
-                            timestamp = lastAccessTime,
-                            duration = getDurationCompat(opEntry),
-                            isForeground = isForegroundAccess(opEntry)
-                        ))
+                    // opEntry is AppOpsManager.OpEntry
+                    val lastAccessTime = getLastAccessTimeReflect(opEntry)
+                    
+                    if (now - lastAccessTime < durationMs) {
+                        val opStr = getOpStrReflect(opEntry)
+                        
+                        if (opStr.isNotEmpty()) {
+                             result.add(SimpleOpData(
+                                packageName = pkgName,
+                                op = opStr,
+                                timestamp = lastAccessTime,
+                                duration = getDurationReflect(opEntry),
+                                isForeground = isForegroundAccessReflect(opEntry),
+                                isRunning = getIsRunningReflect(opEntry)
+                            ))
+                        }
                     }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return emptyList()
         }
+
         return result
     }
 
-    private fun getLastAccessTimeCompat(opEntry: AppOpsManager.OpEntry): Long {
-        return if (Build.VERSION.SDK_INT >= 29) {
-            // Use reflection for flags to avoid compilation errors if symbols missing
-            // 0x01 | 0x08 = OP_FLAG_SELF | OP_FLAG_TRUSTED_PROXIED
-            opEntry.getLastAccessTime(0x01 or 0x08)
-        } else {
-            @Suppress("DEPRECATION")
-            opEntry.time
+    private fun getLastAccessTimeReflect(opEntry: Any): Long {
+        return try {
+            // Try API 29+ method first: getLastAccessTime(int flags)
+            val flags = 0x01 or 0x08 // OP_FLAG_SELF | OP_FLAG_TRUSTED_PROXIED
+            opEntry.javaClass.getMethod("getLastAccessTime", Int::class.javaPrimitiveType).invoke(opEntry, flags) as Long
+        } catch (e: Exception) {
+            try {
+                // Fallback to deprecated getTime()
+                opEntry.javaClass.getMethod("getTime").invoke(opEntry) as Long
+            } catch (e2: Exception) {
+                0L
+            }
         }
     }
     
-    private fun getDurationCompat(opEntry: AppOpsManager.OpEntry): Long {
-         return if (Build.VERSION.SDK_INT >= 29) {
-             // 0x01 | 0x08
-            opEntry.getLastDuration(0x01 or 0x08)
-        } else {
-            @Suppress("DEPRECATION")
-            opEntry.duration.toLong()
+    private fun getOpStrReflect(opEntry: Any): String {
+        return try {
+             opEntry.javaClass.getMethod("getOpStr").invoke(opEntry) as String
+        } catch (e: Exception) {
+            ""
         }
     }
 
-    private fun isForegroundAccess(opEntry: AppOpsManager.OpEntry): Boolean {
-        if (Build.VERSION.SDK_INT >= 29) {
-             // OP_FLAG_TRUSTED_FOREGROUND = 0x04
-             // OP_FLAG_TRUSTED_BACKGROUND = 0x10
-             val timeForeground = opEntry.getLastAccessTime(0x01 or 0x04)
-             val timeBackground = opEntry.getLastAccessTime(0x01 or 0x10)
-             return timeForeground >= timeBackground
+    private fun getDurationReflect(opEntry: Any): Long {
+         return try {
+            val flags = 0x01 or 0x08
+            opEntry.javaClass.getMethod("getLastDuration", Int::class.javaPrimitiveType).invoke(opEntry, flags) as Long
+        } catch (e: Exception) {
+             try {
+                (opEntry.javaClass.getMethod("getDuration").invoke(opEntry) as Int).toLong()
+            } catch (e2: Exception) {
+                0L
+            }
         }
-        return true 
+    }
+
+    private fun isForegroundAccessReflect(opEntry: Any): Boolean {
+         return try {
+             val timeForeground = opEntry.javaClass.getMethod("getLastAccessTime", Int::class.javaPrimitiveType)
+                 .invoke(opEntry, 0x01 or 0x04) as Long
+             val timeBackground = opEntry.javaClass.getMethod("getLastAccessTime", Int::class.javaPrimitiveType)
+                 .invoke(opEntry, 0x01 or 0x10) as Long
+             timeForeground >= timeBackground
+        } catch (e: Exception) {
+            true
+        }
+    }
+
+    private fun getIsRunningReflect(opEntry: Any): Boolean {
+        return try {
+            opEntry.javaClass.getMethod("isRunning").invoke(opEntry) as Boolean
+        } catch (e: Exception) {
+            false
+        }
     }
 }

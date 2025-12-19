@@ -101,6 +101,10 @@ class NetworkRepositoryImpl @Inject constructor(
     override suspend fun syncBlocklist() {
         // Implement periodic sync if needed or handle via analyzeFlows
     }
+
+    override fun clearActiveFlows() {
+        _activeFlows.value = emptyList()
+    }
 }
 
 

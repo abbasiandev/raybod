@@ -216,7 +216,10 @@ fun PremiumScreen(
                 
                 CyberButton(
                     text = "Upgrade Now",
-                    onClick = { showPaymentDialog = true },
+                    onClick = { 
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://codekhoda-sentinel-brain.liara.run/api/v1/public/pay?mobile=true"))
+                        context.startActivity(intent)
+                    },
                     variant = ButtonVariant.GRADIENT,
                     modifier = Modifier.fillMaxWidth()
                 )

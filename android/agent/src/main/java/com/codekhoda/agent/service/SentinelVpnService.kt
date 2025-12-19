@@ -33,6 +33,7 @@ class SentinelVpnService : VpnService() {
 
     private fun startVpn() {
         Log.d("SentinelVpn", "Starting VPN Service...")
+        networkRepository.clearActiveFlows()
         
         val builder = Builder()
             .setSession("SentinelVpn")
@@ -119,14 +120,16 @@ class SentinelVpnService : VpnService() {
                     }
 
                     // Update flow stats
-                    flows[flowKey] = flow.copy(
+                    val updatedFlow = flow.copy(
                         bytesSent = flow.bytesSent + length,
                         timestamp = System.currentTimeMillis()
                     )
+                    flows[flowKey] = updatedFlow
 
-                    // Periodic sync with Repository
-                    if (flows.size >= 10 || System.currentTimeMillis() - flow.timestamp > 5000) {
-                        networkRepository.analyzeFlows(flows.values.toList())
+                    // Periodic sync with Repository - more frequent for responsiveness
+                    val lastSync = flows.values.maxOfOrNull { it.timestamp } ?: 0
+                    if (flows.size >= 5 || System.currentTimeMillis() - lastSync > 2000) {
+                        networkRepository.analyzeFlows(flows.values.toList().sortedByDescending { it.timestamp })
                     }
                 }
 
@@ -142,6 +145,7 @@ class SentinelVpnService : VpnService() {
 
     override fun onDestroy() {
         isRunning = false
+        networkRepository.clearActiveFlows()
         serviceScope.cancel()
         vpnInterface?.close()
         super.onDestroy()

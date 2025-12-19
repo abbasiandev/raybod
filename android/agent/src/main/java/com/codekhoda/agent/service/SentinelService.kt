@@ -39,6 +39,9 @@ class SentinelService : Service() {
     @Inject
     lateinit var packageAnalyzer: PackageAnalyzer
 
+    @Inject
+    lateinit var webSocketClient: com.codekhoda.data.remote.websocket.ThreatWebSocketClient
+
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
@@ -58,6 +61,24 @@ class SentinelService : Service() {
         createNotificationChannel()
         setupClipboardMonitor()
         SentinelFileObserver.startWatchingSensitiveAreas()
+        
+        webSocketClient.connect()
+        observeGlobalThreats()
+    }
+
+    private fun observeGlobalThreats() {
+        scope.launch {
+            webSocketClient.threats.collect { threat ->
+                val packageName = threat["package_name"] as? String ?: "Unknown"
+                val riskLevelStr = threat["risk_level"] as? String ?: "HIGH"
+                val riskLevel = try { RiskLevel.valueOf(riskLevelStr) } catch (e: Exception) { RiskLevel.HIGH }
+                
+                showResultNotification(
+                    packageName = "[GLOBAL THREAT] $packageName",
+                    riskLevel = riskLevel
+                )
+            }
+        }
     }
 
     private fun setupClipboardMonitor() {
@@ -169,6 +190,7 @@ class SentinelService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         clipboardManager?.removePrimaryClipChangedListener(clipboardListener)
+        webSocketClient.disconnect()
         job.cancel()
     }
 }

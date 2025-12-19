@@ -2,6 +2,7 @@ package com.codekhoda.presentation.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Indication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -42,6 +44,7 @@ fun CyberButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val rippleIndication = rememberRipple(color = glowColor.copy(alpha = 0.5f))
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1f,
@@ -114,7 +117,7 @@ fun CyberButton(
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = null,
+                indication = rippleIndication,
                 enabled = enabled,
                 onClick = onClick
             )

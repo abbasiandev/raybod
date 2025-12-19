@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainLayout(
     title: String,
+    userPlan: String = "FREEMIUM",
     onNavigateToScan: () -> Unit,
     onNavigateToNetwork: () -> Unit,
     onNavigateToAbout: () -> Unit,
@@ -57,17 +58,34 @@ fun MainLayout(
                     contentAlignment = Alignment.BottomStart
                 ) {
                     Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "SENTINEL",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = NeonCyan,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 4.sp
+                            )
+                            if (userPlan == "PREMIUM") {
+                                Spacer(Modifier.width(8.dp))
+                                Surface(
+                                    color = NeonPink,
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = "PRO",
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
                         Text(
-                            text = "SENTINEL",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = NeonCyan,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 4.sp
-                        )
-                        Text(
-                            text = "v1.0.0 PROTECTED",
+                            text = if (userPlan == "PREMIUM") "PREMIUM PROTECTION ACTIVE" else "v1.0.0 PROTECTED",
                             style = MaterialTheme.typography.labelSmall,
-                            color = SafeGreen
+                            color = if (userPlan == "PREMIUM") NeonPink else SafeGreen
                         )
                     }
                 }
@@ -126,22 +144,26 @@ fun MainLayout(
                         unselectedContainerColor = Color.Transparent
                     )
                 )
-                Divider(Modifier.padding(vertical = 16.dp, horizontal = 24.dp), color = NeonCyan.copy(alpha = 0.1f))
-                NavigationDrawerItem(
-                    label = { Text("Upgrade Premium", fontWeight = FontWeight.Bold) },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        onNavigateToPremium()
-                    },
-                    icon = { Icon(Icons.Default.Star, contentDescription = null, tint = NeonPink) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-                    colors = NavigationDrawerItemDefaults.colors(
-                        unselectedContainerColor = Color.Transparent,
-                        unselectedTextColor = NeonPink,
-                        unselectedIconColor = NeonPink
+                
+                if (userPlan != "PREMIUM") {
+                    Divider(Modifier.padding(vertical = 16.dp, horizontal = 24.dp), color = NeonCyan.copy(alpha = 0.1f))
+                    NavigationDrawerItem(
+                        label = { Text("Upgrade Premium", fontWeight = FontWeight.Bold) },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            onNavigateToPremium()
+                        },
+                        icon = { Icon(Icons.Default.Star, contentDescription = null, tint = NeonPink) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedContainerColor = Color.Transparent,
+                            unselectedTextColor = NeonPink,
+                            unselectedIconColor = NeonPink
+                        )
                     )
-                )
+                }
+                
                 Spacer(Modifier.weight(1f))
                 NavigationDrawerItem(
                     label = { Text("Terminate Session") },
