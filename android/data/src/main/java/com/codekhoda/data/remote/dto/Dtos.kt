@@ -12,7 +12,9 @@ data class AppMetadataDto(
     @SerializedName("intents") val intents: List<String> = emptyList(),
     @SerializedName("version_name") val versionName: String? = null,
     @SerializedName("install_time") val installTime: Long? = null,
-    @SerializedName("last_update_time") val lastUpdateTime: Long? = null
+    @SerializedName("last_update_time") val lastUpdateTime: Long? = null,
+    @SerializedName("has_reflection") val hasReflection: Boolean? = null,
+    @SerializedName("has_dynamic_loading") val hasDynamicLoading: Boolean? = null
 )
 
 data class DrebinFeaturesDto(

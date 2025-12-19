@@ -21,6 +21,8 @@ class ScanLog(Base):
     intents = Column(JSON, nullable=True)
     install_time = Column(BigInteger, nullable=True)
     last_update_time = Column(BigInteger, nullable=True)
+    has_reflection = Column(Integer, nullable=True) # Store as 0/1 or NULL
+    has_dynamic_loading = Column(Integer, nullable=True)
     device_id = Column(String(100), nullable=True, index=True)
     ip_address = Column(String(45), nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)

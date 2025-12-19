@@ -5,12 +5,15 @@ import com.codekhoda.domain.model.AppPackage
 import com.codekhoda.domain.model.RiskAssessment
 import com.codekhoda.domain.model.RiskLevel
 import com.codekhoda.domain.usecase.ScanAppUseCase
+import com.codekhoda.domain.repository.UserPreferencesRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -28,6 +31,7 @@ class ScanViewModelTest {
 
     private lateinit var scanAppUseCase: ScanAppUseCase
     private lateinit var packageAnalyzer: PackageAnalyzer
+    private lateinit var userPrefs: UserPreferencesRepository
     private lateinit var viewModel: ScanViewModel
 
     private val testDispatcher = StandardTestDispatcher()
@@ -37,7 +41,13 @@ class ScanViewModelTest {
         Dispatchers.setMain(testDispatcher)
         scanAppUseCase = mockk()
         packageAnalyzer = mockk()
-        viewModel = ScanViewModel(scanAppUseCase, packageAnalyzer)
+        userPrefs = mockk()
+        
+        every { userPrefs.userPlan } returns flowOf("PREMIUM")
+        every { userPrefs.lastScanTimestamp } returns flowOf(0L)
+        coEvery { userPrefs.setLastScanTimestamp(any()) } returns Unit
+        
+        viewModel = ScanViewModel(scanAppUseCase, packageAnalyzer, userPrefs)
     }
 
     @After

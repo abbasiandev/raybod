@@ -166,6 +166,14 @@ class FeatureExtractor @Inject constructor(
                 s7.add("Extremely high service-to-component ratio")
             }
         }
+        
+        // Category 2.1: Advanced Evasion Detection
+        if (appPackage.hasReflection) {
+            s7.add("Reflection usage detected (Potential Obfuscation)")
+        }
+        if (appPackage.hasDynamicLoading) {
+            s5.add("Dynamic Code Loading (High Risk)")
+        }
 
         // Network Addresses -> S8
         if (appPackage.permissions.contains("android.permission.INTERNET")) {

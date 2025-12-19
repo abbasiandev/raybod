@@ -67,6 +67,17 @@ fun ScanScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Header
+            Text(
+                text = "HYBRID SENTINEL",
+                style = MaterialTheme.typography.headlineMedium,
+                color = NeonCyan,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(32.dp))
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -82,6 +93,24 @@ fun ScanScreen(
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
+
+                // Integrity Nudge
+                if (!state.isScanning) {
+                    if (state.isRooted) {
+                        SecurityNudgeBanner(
+                            text = "Device is ROOTED. Integrity compromised.",
+                            onClick = {},
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    if (state.isEmulator) {
+                        SecurityNudgeBanner(
+                            text = "Running on EMULATOR. Performance may be degraded.",
+                            onClick = {},
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                }
 
                 // Encouragement Loop: Nudge if vulnerable
                 if (!state.isScanning && vulnerablePermission != null) {

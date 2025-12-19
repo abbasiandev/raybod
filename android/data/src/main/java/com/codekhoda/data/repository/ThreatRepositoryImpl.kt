@@ -88,7 +88,9 @@ class ThreatRepositoryImpl @Inject constructor(
                 intents = appPackage.intents,
                 versionName = appPackage.versionName,
                 installTime = appPackage.installTime,
-                lastUpdateTime = appPackage.lastUpdateTime
+                lastUpdateTime = appPackage.lastUpdateTime,
+                hasReflection = appPackage.hasReflection,
+                hasDynamicLoading = appPackage.hasDynamicLoading
             )
             val response = api.analyzeApp(dto)
             
@@ -152,7 +154,9 @@ class ThreatRepositoryImpl @Inject constructor(
                         intents = pkg.intents,
                         versionName = pkg.versionName,
                         installTime = pkg.installTime,
-                        lastUpdateTime = pkg.lastUpdateTime
+                        lastUpdateTime = pkg.lastUpdateTime,
+                        hasReflection = pkg.hasReflection,
+                        hasDynamicLoading = pkg.hasDynamicLoading
                     )
                 }
                 val response = api.batchScan(com.codekhoda.data.remote.dto.BatchScanRequestDto(dtos))

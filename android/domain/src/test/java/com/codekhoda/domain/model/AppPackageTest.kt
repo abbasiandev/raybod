@@ -23,6 +23,8 @@ class AppPackageTest {
         assertTrue(appPackage.intents.isEmpty()) // Default
         assertEquals(0, appPackage.installTime) // Default
         assertEquals(0, appPackage.lastUpdateTime) // Default
+        assertEquals(false, appPackage.hasReflection) // Default
+        assertEquals(false, appPackage.hasDynamicLoading) // Default
     }
 
     @Test
@@ -44,7 +46,12 @@ class AppPackageTest {
             permissions = permissions,
             intents = intents,
             installTime = 1702900000000L,
-            lastUpdateTime = 1702900100000L
+            lastUpdateTime = 1702900100000L,
+            activityCount = 10,
+            serviceCount = 5,
+            receiverCount = 2,
+            hasReflection = true,
+            hasDynamicLoading = true
         )
 
         assertEquals("com.example.fullapp", appPackage.packageName)
@@ -55,6 +62,11 @@ class AppPackageTest {
         assertEquals(2, appPackage.intents.size)
         assertEquals(1702900000000L, appPackage.installTime)
         assertEquals(1702900100000L, appPackage.lastUpdateTime)
+        assertEquals(10, appPackage.activityCount)
+        assertEquals(5, appPackage.serviceCount)
+        assertEquals(2, appPackage.receiverCount)
+        assertEquals(true, appPackage.hasReflection)
+        assertEquals(true, appPackage.hasDynamicLoading)
     }
 
     @Test

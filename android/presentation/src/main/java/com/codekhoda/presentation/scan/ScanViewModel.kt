@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.codekhoda.agent.scanner.PackageAnalyzer
 import com.codekhoda.domain.model.RiskAssessment
 import com.codekhoda.domain.model.RiskLevel
+import com.codekhoda.domain.usecase.ScanAppUseCase
 import com.codekhoda.domain.repository.UserPreferencesRepository
 import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,8 @@ data class ScanUiState(
     val currentApp: String = "",
     val results: List<RiskAssessment> = emptyList(),
     val isLowSpeedMode: Boolean = false,
+    val isRooted: Boolean = false,
+    val isEmulator: Boolean = false,
     val error: String? = null
 )
 
@@ -34,6 +37,21 @@ class ScanViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState = _uiState.asStateFlow()
+    
+    init {
+        checkIntegrity()
+    }
+
+    private fun checkIntegrity() {
+        viewModelScope.launch {
+            val isRooted = com.codekhoda.agent.util.DeviceIntegrityChecker.isRooted()
+            val isEmulator = com.codekhoda.agent.util.DeviceIntegrityChecker.isEmulator()
+            _uiState.value = _uiState.value.copy(
+                isRooted = isRooted,
+                isEmulator = isEmulator
+            )
+        }
+    }
     
     private var scanJob: Job? = null
     private val LOW_SPEED_DELAY_MS = 500L // Delay between each app scan in low-speed mode

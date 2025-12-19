@@ -64,19 +64,34 @@ class HeuristicEngine:
             "android.permission.CAMERA",
             "android.permission.RECORD_AUDIO",
             "android.permission.ACCESS_FINE_LOCATION",
-            "android.permission.READ_SMS"
+            "android.permission.READ_SMS",
+            "android.permission.RECEIVE_SMS",
+            "android.permission.SEND_SMS"
         }
         
         requested_dangerous = [p for p in metadata.permissions if p in dangerous_perms]
         
         if len(requested_dangerous) >= 3:
              drebin.s7_suspicious_apis.append("High-Risk Permission Combination")
+             perm_list = ", ".join([p.split(".")[-1] for p in requested_dangerous])
              return ScanResult(
                 package_name=metadata.package_name,
                 risk_level=RiskLevel.HIGH,
                 threat_type="Potential Spyware",
-                description=f"High risk permission combination detected.",
+                description=f"High risk permission combination detected: {perm_list}",
                 heuristics_used=["PermissionCombo"],
+                drebin_features=drebin
+            )
+
+        # Rule 3: 2025 Trend - Accessibility + Device Admin (Ransomware/Banker)
+        if "android.permission.BIND_ACCESSIBILITY_SERVICE" in metadata.permissions and \
+           "android.permission.BIND_DEVICE_ADMIN" in metadata.permissions:
+            return ScanResult(
+                package_name=metadata.package_name,
+                risk_level=RiskLevel.CRITICAL,
+                threat_type="Banking Trojan / Ransomware",
+                description="Combination of Accessibility Service and Device Admin is highly indicative of 2025-era financial malware.",
+                heuristics_used=["AccessAdminSynergy"],
                 drebin_features=drebin
             )
             

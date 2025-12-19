@@ -11,17 +11,33 @@ import android.util.Log
  */
 class SentinelAccessibilityService : AccessibilityService() {
 
+    private var lastPackageName: String? = null
+
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        // Here we would implement logic to detect:
-        // 1. Phishing overlays (detecting windows from different packages overlapping)
-        // 2. Automated clickers in sensitive apps (banking, crypto)
-        // 3. Accessibility scraping by known malicious package patterns
-        
+        // Category 2.2: Accessibility Abuse Detection
         val sourcePackage = event.packageName?.toString() ?: "unknown"
-        Log.d("SentinelAccessibility", "Accessibility event from: $sourcePackage")
         
-        // Forensics logging for Cloud Brain
-        // In a real implementation, we would send telemetry if suspicious behavior is detected
+        when (event.eventType) {
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
+                // Detect potential overlay: if a window changes quickly or unexpectedly 
+                // while a sensitive app is in the foreground.
+                if (isSensitiveApp(sourcePackage) && lastPackageName != sourcePackage) {
+                    Log.w("SentinelAccessibility", "Sensitive app $sourcePackage foregrounded. Monitoring for overlays.")
+                }
+                lastPackageName = sourcePackage
+            }
+            AccessibilityEvent.TYPE_VIEW_CLICKED -> {
+                // Detect automated clickers (ATS - Automated Transfer System)
+                if (isSensitiveApp(sourcePackage) && event.isPassword) {
+                    Log.w("SentinelAccessibility", "Click event on password field in $sourcePackage")
+                }
+            }
+        }
+    }
+
+    private fun isSensitiveApp(packageName: String): Boolean {
+        val sensitivePrefixes = listOf("com.android.settings", "com.google.android.apps.walletnfcrel", "com.paypal", "bank")
+        return sensitivePrefixes.any { packageName.contains(it, ignoreCase = true) }
     }
 
     override fun onInterrupt() {

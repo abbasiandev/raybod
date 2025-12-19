@@ -9,7 +9,8 @@ env
 .venv
 .env
 tests
-*.md
-Dockerfile
-liara.json
-Procfile
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+*.db

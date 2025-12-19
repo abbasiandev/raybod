@@ -16,6 +16,9 @@ import com.codekhoda.domain.model.RiskAssessment
 import com.codekhoda.domain.model.RiskLevel
 import com.codekhoda.presentation.components.*
 import com.codekhoda.presentation.theme.*
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable
 fun ThreatDetailsScreen(
@@ -168,6 +171,30 @@ fun ThreatDetailsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun getRiskColor(riskLevel: RiskLevel): Color {
+    return when (riskLevel) {
+        RiskLevel.SAFE -> SafeGreen
+        RiskLevel.LOW -> NeonCyan
+        RiskLevel.MEDIUM -> WarningOrange
+        RiskLevel.HIGH -> NeonPink
+        RiskLevel.CRITICAL -> CriticalMagenta
+        RiskLevel.UNKNOWN -> TextSecondary
+    }
+}
+
+@Composable
+private fun getRiskIcon(riskLevel: RiskLevel): ImageVector {
+    return when (riskLevel) {
+        RiskLevel.SAFE -> Icons.Default.CheckCircle
+        RiskLevel.LOW -> Icons.Default.Info
+        RiskLevel.MEDIUM -> Icons.Default.Warning
+        RiskLevel.HIGH -> Icons.Default.Warning
+        RiskLevel.CRITICAL -> Icons.Default.Warning
+        RiskLevel.UNKNOWN -> Icons.Default.Info
     }
 }
 

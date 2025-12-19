@@ -91,3 +91,36 @@ def test_verify_payment_failure_does_not_update_plan(client, auth_header):
     assert user.plan == "FREEMIUM"
     db.close()
 
+def test_public_checkout_flow(client):
+    """Test the public checkout flow from landing page."""
+    # 1. Checkout session
+    response = client.post(
+        "/api/v1/public/checkout",
+        data={"plan_id": "PREMIUM_2025"},
+        follow_redirects=False
+    )
+    assert response.status_code == 303
+    location = response.headers["location"]
+    assert "/payment/sandbox/" in location
+    session_id = location.split("/")[-1]
+    
+    # 2. Access sandbox page
+    response = client.get(location)
+    assert response.status_code == 200
+    assert "Secure Payment" in response.text
+    
+    # 3. Process success
+    response = client.post(
+        "/api/v1/public/payment/process",
+        data={"session_id": session_id, "success": "true"}
+    )
+    assert response.status_code == 200
+    assert "Payment Successful" in response.text
+    
+    # 4. Process failure with invalid session
+    response = client.post(
+        "/api/v1/public/payment/process",
+        data={"session_id": "invalid", "success": "true"}
+    )
+    assert response.status_code == 404
+

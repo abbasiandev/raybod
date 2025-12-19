@@ -12,5 +12,7 @@ data class AppPackage(
     val nativeLibraries: List<String> = emptyList(),
     val activityCount: Int = 0,
     val serviceCount: Int = 0,
-    val receiverCount: Int = 0
+    val receiverCount: Int = 0,
+    val hasReflection: Boolean = false,
+    val hasDynamicLoading: Boolean = false
 )

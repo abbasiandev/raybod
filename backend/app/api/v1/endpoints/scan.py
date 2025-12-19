@@ -1,7 +1,8 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request, Depends
 from sqlalchemy.orm import Session
-from app.schemas.scan_schema import AppMetadata, ScanResult, BatchScanRequest, BatchScanResult
+from app.schemas.scan_schema import AppMetadata, ScanResult, BatchScanRequest, BatchScanResult, FeedbackReport
+from app.models.feedback import ThreatFeedback
 from app.engine.heuristics import engine
 from app.core.database import get_db
 from app.models.scan_log import ScanLog
@@ -38,6 +39,8 @@ async def analyze_app(
             intents=metadata.intents,
             install_time=metadata.install_time,
             last_update_time=metadata.last_update_time,
+            has_reflection=1 if metadata.has_reflection else 0 if metadata.has_reflection is not None else None,
+            has_dynamic_loading=1 if metadata.has_dynamic_loading else 0 if metadata.has_dynamic_loading is not None else None,
             device_id=request.headers.get("X-Device-ID"),
             ip_address=request.client.host if request.client else None,
             timestamp=datetime.utcnow()
@@ -90,6 +93,8 @@ async def batch_scan(
                 intents=metadata.intents,
                 install_time=metadata.install_time,
                 last_update_time=metadata.last_update_time,
+                has_reflection=1 if metadata.has_reflection else 0 if metadata.has_reflection is not None else None,
+                has_dynamic_loading=1 if metadata.has_dynamic_loading else 0 if metadata.has_dynamic_loading is not None else None,
                 device_id=request.headers.get("X-Device-ID"),
                 ip_address=request.client.host if request.client else None,
                 timestamp=datetime.utcnow()
@@ -107,3 +112,18 @@ async def batch_scan(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/feedback")
+async def report_feedback(
+    report: FeedbackReport,
+    db: Session = Depends(get_db)
+):
+    """Report false positive or feedback on a scan result to improve model (Concept Drift)."""
+    feedback_entry = ThreatFeedback(
+        package_name=report.package_name,
+        is_false_positive=report.is_false_positive,
+        user_comment=report.user_comment,
+        original_risk_level=report.original_risk_level.value
+    )
+    db.add(feedback_entry)
+    db.commit()
+    return {"status": "success", "message": "Feedback received. Thank you for helping us improve!"}

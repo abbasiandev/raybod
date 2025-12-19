@@ -21,6 +21,8 @@ class AppMetadata(BaseModel):
     install_time: Optional[int] = None
     last_update_time: Optional[int] = None
     ensemble_metadata: Optional[Dict[str, float]] = None
+    has_reflection: Optional[bool] = None
+    has_dynamic_loading: Optional[bool] = None
     
 class DrebinFeatures(BaseModel):
     s1_hardware: List[str] = []
@@ -45,3 +47,9 @@ class BatchScanRequest(BaseModel):
 
 class BatchScanResult(BaseModel):
     results: List[ScanResult]
+
+class FeedbackReport(BaseModel):
+    package_name: str
+    is_false_positive: bool
+    user_comment: Optional[str] = None
+    original_risk_level: RiskLevel

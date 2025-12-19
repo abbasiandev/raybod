@@ -52,6 +52,7 @@ class PackageAnalyzer(private val context: Context) {
         }
         
         val nativeLibs = getNativeLibraries(pkg)
+        val (hasReflection, hasDynamicLoading) = analyzeSuspiciousApis(pkg)
         
         return AppPackage(
             packageName = pkg.packageName,
@@ -65,8 +66,42 @@ class PackageAnalyzer(private val context: Context) {
             nativeLibraries = nativeLibs,
             activityCount = pkg.activities?.size ?: 0,
             serviceCount = pkg.services?.size ?: 0,
-            receiverCount = pkg.receivers?.size ?: 0
+            receiverCount = pkg.receivers?.size ?: 0,
+            hasReflection = hasReflection,
+            hasDynamicLoading = hasDynamicLoading
         )
+    }
+
+    private fun analyzeSuspiciousApis(pkg: PackageInfo): Pair<Boolean, Boolean> {
+        // In a real scenario, this would involve scanning the DEX files for 
+        // Ljava/lang/reflect/Method;->invoke or Landroidx/loader/content/CursorLoader; etc.
+        // For this implementation, we simulate detection by looking for common 
+        // libraries or patterns in the application info.
+        
+        var reflectionFound = false
+        var dynamicLoadingFound = false
+        
+        try {
+            val sourceDir = pkg.applicationInfo.sourceDir
+            val file = java.io.File(sourceDir)
+            if (file.exists()) {
+                // Heuristic: Many malware samples that use reflection or dynamic loading
+                // will have certain strings visible even in a quick scan of the APK.
+                val bytes = file.inputStream().use { it.readNBytes(1024 * 50) } // Read first 50KB
+                val content = String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+                
+                if (content.contains("DexClassLoader") || content.contains("PathClassLoader")) {
+                    dynamicLoadingFound = true
+                }
+                if (content.contains("java/lang/reflect/Method") || content.contains("getDeclaredMethod")) {
+                    reflectionFound = true
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        
+        return Pair(reflectionFound, dynamicLoadingFound)
     }
 
     private fun getNativeLibraries(pkg: PackageInfo): List<String> {

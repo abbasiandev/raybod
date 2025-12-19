@@ -40,4 +40,6 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.junit)
+    testImplementation(libs.hilt.android.testing)
+    kaptTest(libs.hilt.android.compiler.testing)
 }

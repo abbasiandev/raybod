@@ -15,13 +15,25 @@ class DtosTest {
             packageName = "com.test.app",
             versionCode = 42L,
             signature = "sha256hash",
-            permissions = listOf("android.permission.CAMERA", "android.permission.INTERNET")
+            permissions = listOf("android.permission.CAMERA", "android.permission.INTERNET"),
+            intents = listOf("action.VIEW"),
+            versionName = "1.0.0",
+            installTime = 1000L,
+            lastUpdateTime = 2000L,
+            hasReflection = true,
+            hasDynamicLoading = false
         )
 
         assertEquals("com.test.app", dto.packageName)
         assertEquals(42L, dto.versionCode)
         assertEquals("sha256hash", dto.signature)
         assertEquals(2, dto.permissions.size)
+        assertEquals(1, dto.intents.size)
+        assertEquals("1.0.0", dto.versionName)
+        assertEquals(1000L, dto.installTime)
+        assertEquals(2000L, dto.lastUpdateTime)
+        assertEquals(true, dto.hasReflection)
+        assertEquals(false, dto.hasDynamicLoading)
     }
 
     @Test

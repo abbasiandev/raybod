@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         minSdk = 26
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.codekhoda.data.HiltTestRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {
@@ -52,4 +52,10 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.okhttp.mockwebserver)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    
+    // Hilt testing
+    androidTestImplementation(libs.hilt.android.testing)
+    kaptAndroidTest(libs.hilt.android.compiler.testing)
 }

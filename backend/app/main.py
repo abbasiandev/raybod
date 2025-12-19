@@ -7,7 +7,10 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
 from app.core.config import settings
+print("DEBUG: Loading all routers...")
 from app.api.v1.endpoints import scan, auth, dashboard, allowlist, threats, reputation, devices, models, analytics, websocket, keys, public, billing, network
+print("DEBUG: Routers loaded successfully")
+
 from app.core.database import init_db
 
 limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "1")

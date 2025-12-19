@@ -60,7 +60,7 @@ class SentinelVpnService : VpnService() {
 
         val flows = mutableMapOf<String, NetworkFlow>()
 
-        while (isRunning && coroutineContext.isActive) {
+        while (isRunning && currentCoroutineContext().isActive) {
             val length = withContext(Dispatchers.IO) {
                 inputStream.read(packet.array())
             }

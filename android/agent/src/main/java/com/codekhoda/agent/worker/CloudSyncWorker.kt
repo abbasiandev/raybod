@@ -39,9 +39,11 @@ class CloudSyncWorker(
                 // For the task's sake, let's implement the logic to fetch and update.
                 val response = api.analyzeApp(AppMetadataDto(
                     packageName = entity.packageName,
-                    versionCode = 0, // Mocked or need to fetch
+                    versionCode = entity.appVersion,
                     signature = "", 
-                    permissions = entity.heuristicsUsed // Using heuristics as a proxy for permissions for this demo fix
+                    permissions = emptyList(),
+                    hasReflection = false,
+                    hasDynamicLoading = false
                 ))
 
                 val updatedAssessment = RiskAssessment(
