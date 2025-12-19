@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Overview{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block top_actions %}
+<a href="/dashboard/export/csv" class="btn btn-secondary btn-sm">
+    📥 Export CSV
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon primary">📊</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.total_scans | default(0) | int }}</div>
+            <div class="stat-label">Total Scans</div>
+            <div class="stat-change positive">↑ Today: {{ stats.scans_today | default(0) | int }}</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon success">✅</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.safe_count | default(0) | int }}</div>
+            <div class="stat-label">Safe Apps</div>
+            <div class="stat-change positive">{{ stats.safe_percentage | default(0) | round(1) }}%</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon warning">⚠️</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.risky_count | default(0) | int }}</div>
+            <div class="stat-label">Risky Apps</div>
+            <div class="stat-change negative">{{ stats.risky_percentage | default(0) | round(1) }}%</div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon danger">🚨</div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.threat_count | default(0) | int }}</div>
+            <div class="stat-label">Threats Detected</div>
+            <div class="stat-change negative">{{ stats.threat_percentage | default(0) | round(1) }}%</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="stats-grid">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Scan Trends (Last 7 Days)</h3>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Risk Distribution</h3>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="riskChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Table -->
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Recent Scans</h3>
+        <a href="/dashboard/analytics" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Package</th>
+                    <th>Risk Level</th>
+                    <th>Threat Type</th>
+                    <th>Device</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_scans %}
+                <tr>
+                    <td>{{ log.package_name }}</td>
+                    <td>
+                        <span
+                            class="badge badge-{% if log.risk_level == 'SAFE' %}safe{% elif log.risk_level == 'HIGH' or log.risk_level == 'CRITICAL' %}danger{% else %}warning{% endif %}">
+                            {{ log.risk_level }}
+                        </span>
+                    </td>
+                    <td>{{ log.threat_type or '—' }}</td>
+                    <td>{{ log.device_id[:8] if log.device_id else '—' }}...</td>
+                    <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else '—' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No scans recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Trends Chart
+        const trendsData = {{ trends_data | tojson | safe
+    }};
+    if (trendsData && document.getElementById('trendsChart')) {
+        initChart('trendsChart', 'line', {
+            labels: trendsData.labels || [],
+            datasets: [{
+                label: 'Scans',
+                data: trendsData.values || [],
+                borderColor: chartColors.cyan,
+                backgroundColor: 'rgba(0, 229, 255, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: chartColors.cyan
+            }]
+        });
+    }
+
+    // Risk Distribution Chart
+    const riskData = {{ risk_data | tojson | safe }};
+    if (riskData && document.getElementById('riskChart')) {
+        initChart('riskChart', 'doughnut', {
+            labels: riskData.labels || ['Safe', 'Low', 'Medium', 'High', 'Critical'],
+            datasets: [{
+                data: riskData.values || [0, 0, 0, 0, 0],
+                backgroundColor: [
+                    chartColors.green,
+                    chartColors.primary,
+                    chartColors.orange,
+                    chartColors.pink,
+                    chartColors.red
+                ],
+                borderWidth: 0
+            }]
+        }, {
+            cutout: '60%'
+        });
+    }
+});
+</script>
+{% endblock %}

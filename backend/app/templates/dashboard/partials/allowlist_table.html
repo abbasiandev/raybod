@@ -1,0 +1,30 @@
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Package Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.id }}</td>
+                <td>{{ entry.package_name }}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" hx-delete="/dashboard/allowlist/{{ entry.id }}"
+                        hx-target="#allowlist-table" hx-swap="innerHTML"
+                        hx-confirm="Remove {{ entry.package_name }} from allowlist?">
+                        🗑️ Remove
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center text-muted">No packages in allowlist.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

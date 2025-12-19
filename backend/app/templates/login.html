@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block auth_content %}
+<div class="auth-card">
+    <div class="auth-logo">
+        <span class="logo-icon">🛡️</span>
+        <span class="logo-text">Sentinel</span>
+    </div>
+
+    <h2 class="auth-title">Admin Dashboard</h2>
+
+    {% if error %}
+    <div class="auth-error">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form class="auth-form" action="/dashboard/login" method="POST">
+        <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input type="text" id="username" name="username" class="form-input" placeholder="Enter your username"
+                required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password"
+                required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Sign In
+        </button>
+    </form>
+</div>
+{% endblock %}

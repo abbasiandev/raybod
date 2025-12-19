@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Blocklist{% endblock %}
+{% block page_title %}Blocklist Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Add Package</h3>
+    </div>
+    <div class="card-body">
+        <form hx-post="/dashboard/blocklist" hx-target="#blocklist-table" hx-swap="innerHTML"
+            class="d-flex gap-2 flex-wrap">
+            <input type="text" name="package_name" class="form-input" placeholder="com.malware.app" required
+                style="flex: 2; min-width: 200px;">
+            <select name="threat_type" class="form-input form-select" style="flex: 1; min-width: 150px;">
+                <option value="Known Malware">Known Malware</option>
+                <option value="Spyware">Spyware</option>
+                <option value="Adware">Adware</option>
+                <option value="Trojan">Trojan</option>
+                <option value="Ransomware">Ransomware</option>
+            </select>
+            <button type="submit" class="btn btn-danger">
+                🚫 Add to Blocklist
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Blocked Packages</h3>
+        <span class="badge badge-danger">{{ entries | length }} packages</span>
+    </div>
+    <div id="blocklist-table">
+        {% include "dashboard/partials/blocklist_table.html" %}
+    </div>
+</div>
+{% endblock %}

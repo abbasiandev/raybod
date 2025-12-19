@@ -2,8 +2,7 @@
   "app": "codekhoda-sentinel-brain",
   "platform": "docker",
   "port": 8000,
-  "plan": "free",
-  "network": "codekhoda-network"
+  "plan": "free"
 }
 
 

@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codekhoda.agent.scanner.PackageAnalyzer
 import com.codekhoda.domain.model.RiskAssessment
+import com.codekhoda.domain.model.RiskLevel
 import com.codekhoda.domain.usecase.ScanAppUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -15,7 +19,8 @@ data class ScanUiState(
     val isScanning: Boolean = false,
     val progress: Float = 0f,
     val currentApp: String = "",
-    val results: List<RiskAssessment> = emptyList()
+    val results: List<RiskAssessment> = emptyList(),
+    val isLowSpeedMode: Boolean = false
 )
 
 @HiltViewModel
@@ -26,16 +31,36 @@ class ScanViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState = _uiState.asStateFlow()
+    
+    private var scanJob: Job? = null
+    private val LOW_SPEED_DELAY_MS = 500L // Delay between each app scan in low-speed mode
 
-    fun startScan() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isScanning = true, progress = 0f, results = emptyList())
+    fun startScan(lowSpeedMode: Boolean = false) {
+        // Cancel any existing scan
+        scanJob?.cancel()
+        
+        scanJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isScanning = true, 
+                progress = 0f, 
+                results = emptyList(),
+                isLowSpeedMode = lowSpeedMode
+            )
             
             val apps = packageAnalyzer.getInstalledApps() // This is heavy, should be background
             val total = apps.size
             val results = mutableListOf<RiskAssessment>()
 
             apps.forEachIndexed { index, app ->
+                // Check if the coroutine is still active (not cancelled)
+                if (!isActive) {
+                    _uiState.value = _uiState.value.copy(
+                        isScanning = false,
+                        currentApp = "Scan Stopped"
+                    )
+                    return@launch
+                }
+                
                 _uiState.value = _uiState.value.copy(
                     progress = index / total.toFloat(),
                     currentApp = app.packageName
@@ -44,14 +69,49 @@ class ScanViewModel @Inject constructor(
                 // Actual scan (calls Cloud or Cache)
                 val result = scanAppUseCase(app)
                 results.add(result)
+                
+                // Add delay in low-speed mode for better performance
+                if (lowSpeedMode && isActive) {
+                    delay(LOW_SPEED_DELAY_MS)
+                }
             }
 
-            _uiState.value = _uiState.value.copy(
-                isScanning = false,
-                progress = 1f,
-                currentApp = "Scan Complete",
-                results = results
-            )
+            // Only update to complete if scan wasn't cancelled
+            if (isActive) {
+                // Sort results: Critical > High > Medium > Low > Safe > Unknown
+                val sortedResults = results.sortedByDescending { result ->
+                    when (result.riskLevel) {
+                        RiskLevel.CRITICAL -> 5
+                        RiskLevel.HIGH -> 4
+                        RiskLevel.MEDIUM -> 3
+                        RiskLevel.LOW -> 2
+                        RiskLevel.SAFE -> 1
+                        RiskLevel.UNKNOWN -> 0
+                    }
+                }
+                
+                _uiState.value = _uiState.value.copy(
+                    isScanning = false,
+                    progress = 1f,
+                    currentApp = "Scan Complete",
+                    results = sortedResults
+                )
+            }
         }
+    }
+    
+    fun stopScan() {
+        scanJob?.cancel()
+        scanJob = null
+        _uiState.value = _uiState.value.copy(
+            isScanning = false,
+            currentApp = "Scan Stopped"
+        )
+    }
+    
+    fun toggleLowSpeedMode() {
+        _uiState.value = _uiState.value.copy(
+            isLowSpeedMode = !_uiState.value.isLowSpeedMode
+        )
     }
 }

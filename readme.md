@@ -79,6 +79,26 @@ We prioritize **Clean Architecture** with **MVVM** to ensure scalability and tes
 
 ---
 
+## 🌐 Live Deployment
+
+The Cloud Brain is deployed and accessible at:
+
+| Endpoint | URL |
+|----------|-----|
+| **Health Check** | https://codekhoda-sentinel-brain.liara.run/health |
+| **API Documentation** | https://codekhoda-sentinel-brain.liara.run/docs |
+| **Scan Endpoint** | https://codekhoda-sentinel-brain.liara.run/api/v1/scan/analyze |
+
+### Infrastructure
+
+| Component | Platform | Details |
+|-----------|----------|---------|
+| **Backend** | [Liara](https://liara.ir) | Docker container on free tier |
+| **Database** | PostgreSQL 18.0 | `codekhoda-db` on Liara |
+| **Network** | `codekhoda-network` | Private network connecting app and database |
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -86,17 +106,29 @@ We prioritize **Clean Architecture** with **MVVM** to ensure scalability and tes
 - **Android Development**: Android Studio Arctic Fox+, JDK 17
 - **Backend Development**: Python 3.10+, pip
 
-### 1. Clone the Repository
+### Option A: Use Live Backend (Recommended)
+
+The Android app is pre-configured to use the live Liara backend. Simply:
+
+1. Clone the repository
+2. Open `android/` in Android Studio
+3. Build & Run on your device
+
+### Option B: Local Development
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/your-org/hybrid-cloud-sentinel.git
 cd hybrid-cloud-sentinel
 ```
 
-### 2. Start the Backend (Cloud Brain)
+#### 2. Start the Backend (Cloud Brain)
 
 ```bash
 cd backend
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -105,7 +137,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 *Production API available at `https://codekhoda-sentinel-brain.liara.run`*  
 *API Documentation: [Local](http://127.0.0.1:8000/docs) | [Production](https://codekhoda-sentinel-brain.liara.run/docs)*
 
-### 3. Run the Android App
+#### 3. Configure Android for Local Backend
 
 1. Open the `android/` folder in **Android Studio**
 2. Sync Gradle dependencies
@@ -118,9 +150,41 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    # For production (Liara):
    cloud.brain.url=https://codekhoda-sentinel-brain.liara.run
    ```
-4. Build & Run the `:app` module on an emulator or device
 
-> **Note**: Use `10.0.2.2` for Android Emulator to reach `localhost`. For physical devices, use your machine's local IP.
+---
+
+## ☁️ Deployment Guide
+
+### Deploying to Liara
+
+1. **Install Liara CLI**:
+   ```bash
+   npm install -g @liara/cli
+   liara login
+   ```
+
+2. **Create PostgreSQL Database**:
+   ```bash
+   liara db create --name your-db --type postgres --public-network
+   ```
+
+3. **Deploy Backend**:
+   ```bash
+   cd backend
+   liara deploy
+   ```
+
+4. **Configure Database URL**:
+   ```bash
+   liara env set --app your-app-name DATABASE_URL=postgresql://user:pass@your-db:5432/postgres
+   ```
+
+### Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://root:xxx@codekhoda-db:5432/postgres` |
+| `DEBUG` | Enable debug mode | `false` |
 
 ---
 
@@ -137,23 +201,30 @@ hybrid-cloud-sentinel/
 │   ├── 📂 data/                   # Data layer
 │   │   ├── local/                 # Room database, DAOs
 │   │   ├── remote/                # Retrofit API, DTOs
+│   │   ├── ml/                    # TFLite model, FeatureExtractor
 │   │   └── repository/            # Repository implementations
 │   ├── 📂 presentation/           # UI Layer (Jetpack Compose)
-│   │   ├── theme/                 # Design system
-│   │   ├── dashboard/             # Main dashboard screen
-│   │   └── scan/                  # Scanning screens
+│   │   ├── theme/                 # Cyberpunk design system
+│   │   ├── components/            # Reusable UI components
+│   │   ├── scan/                  # Scanning screens
+│   │   └── about/                 # About screen
 │   └── 📂 agent/                  # System services
-│       ├── service/               # Foreground service
+│       ├── service/               # Foreground service (SentinelService)
 │       └── scanner/               # Package analyzer
 ├── 📂 backend/                    # Python Backend (Cloud Brain)
-│   └── 📂 app/
-│       ├── api/                   # REST endpoints
-│       ├── engine/                # Heuristics & ML
-│       ├── models/                # Database models
-│       └── schemas/               # Pydantic schemas
+│   ├── 📂 app/
+│   │   ├── api/v1/endpoints/      # REST endpoints (scan, auth, dashboard)
+│   │   ├── core/                  # Config, database, security
+│   │   ├── engine/                # Heuristics & ML
+│   │   ├── models/                # SQLAlchemy models (User, ScanLog)
+│   │   ├── schemas/               # Pydantic schemas
+│   │   ├── services/              # Business logic (auth)
+│   │   ├── static/                # CSS, JavaScript
+│   │   └── templates/             # Jinja2 HTML templates (dashboard)
+│   └── 📂 tests/                  # pytest test suite
 ├── 📂 docs/                       # Documentation
-├── 📂 references/                 # Reference repositories
-└── 📂 samples/                    # Test samples
+├── 📂 references/                 # Reference ML models & datasets
+└── 📂 samples/                    # Test APK samples
 ```
 
 ---

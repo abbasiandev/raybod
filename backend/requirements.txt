@@ -15,3 +15,16 @@ httpx==0.26.0
 slowapi==0.1.9
 sqlalchemy==2.0.25
 aiosqlite==0.19.0
+psycopg2-binary==2.9.9
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Templating & Frontend
+jinja2==3.1.2
+python-multipart==0.0.6
+
+# Export & Reporting
+weasyprint==60.1
+openpyxl==3.1.2

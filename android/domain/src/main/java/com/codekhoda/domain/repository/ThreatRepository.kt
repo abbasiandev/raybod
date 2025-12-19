@@ -7,7 +7,8 @@ interface ThreatRepository {
     /**
      * Scans a single application package and returns a risk assessment.
      */
-    suspend fun scanApp(appPackage: AppPackage): RiskAssessment
+    suspend fun scanApp(appPackage: AppPackage, lowSpeedMode: Boolean = false): RiskAssessment
+
 
     /**
      * Scans a list of application packages.

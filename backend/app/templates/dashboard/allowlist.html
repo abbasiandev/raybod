@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Allowlist{% endblock %}
+{% block page_title %}Allowlist Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Add Package</h3>
+    </div>
+    <div class="card-body">
+        <form hx-post="/dashboard/allowlist" hx-target="#allowlist-table" hx-swap="innerHTML" class="d-flex gap-2">
+            <input type="text" name="package_name" class="form-input" placeholder="com.example.app" required
+                style="flex: 1;">
+            <button type="submit" class="btn btn-primary">
+                ✅ Add to Allowlist
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">Allowed Packages</h3>
+        <span class="badge badge-info">{{ entries | length }} packages</span>
+    </div>
+    <div id="allowlist-table">
+        {% include "dashboard/partials/allowlist_table.html" %}
+    </div>
+</div>
+{% endblock %}

@@ -114,8 +114,8 @@ class ScanViewModelTest {
         // Then
         val state = viewModel.uiState.first()
         assertEquals(2, state.results.size)
-        assertEquals(RiskLevel.SAFE, state.results[0].riskLevel)
-        assertEquals(RiskLevel.CRITICAL, state.results[1].riskLevel)
+        assertEquals(RiskLevel.CRITICAL, state.results[0].riskLevel)
+        assertEquals(RiskLevel.SAFE, state.results[1].riskLevel)
     }
 
     @Test
@@ -215,5 +215,41 @@ class ScanViewModelTest {
                 state.results.any { it.riskLevel == level }
             )
         }
+    }
+
+    @Test
+    fun `scan results are sorted from most dangerous to least dangerous`() = runTest {
+        // Given
+        val apps = listOf(
+            AppPackage("com.safe", 1, signature = "hash1"),
+            AppPackage("com.critical", 2, signature = "hash2"),
+            AppPackage("com.high", 3, signature = "hash3"),
+            AppPackage("com.medium", 4, signature = "hash4"),
+            AppPackage("com.low", 5, signature = "hash5"),
+            AppPackage("com.unknown", 6, signature = "hash6")
+        )
+
+        coEvery { packageAnalyzer.getInstalledApps() } returns apps
+        
+        coEvery { scanAppUseCase(apps[0]) } returns RiskAssessment("com.safe", RiskLevel.SAFE, description = "Safe")
+        coEvery { scanAppUseCase(apps[1]) } returns RiskAssessment("com.critical", RiskLevel.CRITICAL, description = "Critical")
+        coEvery { scanAppUseCase(apps[2]) } returns RiskAssessment("com.high", RiskLevel.HIGH, description = "High")
+        coEvery { scanAppUseCase(apps[3]) } returns RiskAssessment("com.medium", RiskLevel.MEDIUM, description = "Medium")
+        coEvery { scanAppUseCase(apps[4]) } returns RiskAssessment("com.low", RiskLevel.LOW, description = "Low")
+        coEvery { scanAppUseCase(apps[5]) } returns RiskAssessment("com.unknown", RiskLevel.UNKNOWN, description = "Unknown")
+
+        // When
+        viewModel.startScan()
+        advanceUntilIdle()
+
+        // Then
+        val state = viewModel.uiState.first()
+        assertEquals(6, state.results.size)
+        assertEquals(RiskLevel.CRITICAL, state.results[0].riskLevel)
+        assertEquals(RiskLevel.HIGH, state.results[1].riskLevel)
+        assertEquals(RiskLevel.MEDIUM, state.results[2].riskLevel)
+        assertEquals(RiskLevel.LOW, state.results[3].riskLevel)
+        assertEquals(RiskLevel.SAFE, state.results[4].riskLevel)
+        assertEquals(RiskLevel.UNKNOWN, state.results[5].riskLevel)
     }
 }
