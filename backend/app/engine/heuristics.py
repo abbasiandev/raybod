@@ -59,6 +59,31 @@ class HeuristicEngine:
         if intent_result:
             return intent_result
 
+        # NEW: Size-Permission Anomaly (Phase B/F)
+        if metadata.app_size and metadata.app_size < 500_000:  # 500KB
+            # Normalize permissions to check (handle fully qualified names)
+            dangerous_for_small = {"READ_EXTERNAL_STORAGE", "CAMERA", "RECORD_AUDIO", "READ_SMS"}
+            
+            # Check if any requested permission ends with one of the dangerous ones
+            has_dangerous = False
+            suspicious_perms = []
+            for perm in metadata.permissions:
+                perm_short = perm.split(".")[-1]
+                if perm_short in dangerous_for_small:
+                    has_dangerous = True
+                    suspicious_perms.append(perm_short)
+            
+            if has_dangerous:
+                drebin.s7_suspicious_apis.append("Size-Permission Anomaly")
+                return ScanResult(
+                    package_name=metadata.package_name,
+                    risk_level=RiskLevel.HIGH,
+                    threat_type="Suspicious Lightweight App",
+                    description=f"Very small app (<500KB) requesting sensitive permissions: {', '.join(suspicious_perms)}.",
+                    heuristics_used=["SizeAnomaly"],
+                    drebin_features=drebin
+                )
+
         # Rule 2: Suspicious Permission Combinations (S2)
         dangerous_perms = {
             "android.permission.CAMERA",

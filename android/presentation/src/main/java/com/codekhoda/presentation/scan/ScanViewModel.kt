@@ -26,6 +26,7 @@ data class ScanUiState(
     val scannedApps: Int = 0,
     val recentApps: List<Pair<String, String>> = emptyList(), // Pair<PackageName, AppLabel>
     val results: List<RiskAssessment> = emptyList(),
+    val showResultsSheet: Boolean = false,
     val isLowSpeedMode: Boolean = false,
     val isRooted: Boolean = false,
     val isEmulator: Boolean = false,
@@ -127,6 +128,11 @@ class ScanViewModel @Inject constructor(
                 val result = scanAppUseCase(app)
                 results.add(result)
                 
+                // Update UI state with latest results incrementally
+                _uiState.value = _uiState.value.copy(
+                    results = results.toList()
+                )
+                
                 // Add delay in low-speed mode for better performance
                 if (lowSpeedMode && isActive) {
                     delay(LOW_SPEED_DELAY_MS)
@@ -187,5 +193,9 @@ class ScanViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun setShowResultsSheet(show: Boolean) {
+        _uiState.value = _uiState.value.copy(showResultsSheet = show)
     }
 }

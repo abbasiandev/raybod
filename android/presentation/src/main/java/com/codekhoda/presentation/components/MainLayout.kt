@@ -9,7 +9,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -36,6 +40,7 @@ fun MainLayout(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var showExitDialog by remember { mutableStateOf(false) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -170,7 +175,7 @@ fun MainLayout(
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
-                        onExit()
+                        showExitDialog = true
                     },
                     icon = { Icon(Icons.Default.ExitToApp, contentDescription = null, tint = AlertRed) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
@@ -229,6 +234,43 @@ fun MainLayout(
             },
             containerColor = DeepBlack,
             content = content
+        )
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = {
+                Text(
+                    text = "TERMINATE SESSION?",
+                    color = NeonCyan,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to exit the application?",
+                    color = TextMuted
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExitDialog = false
+                        onExit()
+                    }
+                ) {
+                    Text("EXIT", color = AlertRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("CANCEL", color = NeonCyan)
+                }
+            },
+            containerColor = DarkSurface,
+            shape = RoundedCornerShape(16.dp)
         )
     }
 }

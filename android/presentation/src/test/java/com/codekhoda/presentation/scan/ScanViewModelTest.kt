@@ -6,10 +6,13 @@ import com.codekhoda.domain.model.RiskAssessment
 import com.codekhoda.domain.model.RiskLevel
 import com.codekhoda.domain.usecase.ScanAppUseCase
 import com.codekhoda.domain.repository.UserPreferencesRepository
+import com.codekhoda.agent.util.DeviceIntegrityChecker
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -43,6 +46,10 @@ class ScanViewModelTest {
         packageAnalyzer = mockk()
         userPrefs = mockk()
         
+        mockkObject(DeviceIntegrityChecker)
+        every { DeviceIntegrityChecker.isRooted() } returns false
+        every { DeviceIntegrityChecker.isEmulator() } returns false
+        
         every { userPrefs.userPlan } returns flowOf("PREMIUM")
         every { userPrefs.lastScanTimestamp } returns flowOf(0L)
         every { userPrefs.dailyScanCount } returns flowOf(0)
@@ -50,6 +57,40 @@ class ScanViewModelTest {
         coEvery { userPrefs.setDailyScanCount(any()) } returns Unit
         
         viewModel = ScanViewModel(scanAppUseCase, packageAnalyzer, userPrefs)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `initial state is not scanning with empty results`() = runTest {
+        // When
+        val state = viewModel.uiState.first()
+
+        // Then
+        assertFalse(state.isScanning)
+        assertEquals(0f, state.progress, 0.01f)
+        assertEquals("", state.currentApp)
+        assertTrue(state.results.isEmpty())
+        assertFalse(state.showResultsSheet)
+    }
+
+    @Test
+    fun `setShowResultsSheet updates the state correctly`() = runTest {
+        // When
+        viewModel.setShowResultsSheet(true)
+        var state = viewModel.uiState.first()
+        // Then
+        assertTrue(state.showResultsSheet)
+
+        // When
+        viewModel.setShowResultsSheet(false)
+        state = viewModel.uiState.first()
+        // Then
+        assertFalse(state.showResultsSheet)
     }
 
     @Test
@@ -79,7 +120,11 @@ class ScanViewModelTest {
         
         val apps = listOf(AppPackage("com.app1", 1, signature = "hash1"))
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
-        coEvery { scanAppUseCase(any()) } returns RiskAssessment("com.app1", RiskLevel.SAFE, "Clean")
+        coEvery { scanAppUseCase(any()) } returns RiskAssessment(
+            packageName = "com.app1",
+            riskLevel = RiskLevel.SAFE,
+            description = "Clean"
+        )
 
         // When
         viewModel.startScan()
@@ -102,7 +147,11 @@ class ScanViewModelTest {
         
         val apps = listOf(AppPackage("com.app1", 1, signature = "hash1"))
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
-        coEvery { scanAppUseCase(any()) } returns RiskAssessment("com.app1", RiskLevel.SAFE, "Clean")
+        coEvery { scanAppUseCase(any()) } returns RiskAssessment(
+            packageName = "com.app1",
+            riskLevel = RiskLevel.SAFE,
+            description = "Clean"
+        )
 
         // When
         viewModel.startScan()
@@ -112,23 +161,6 @@ class ScanViewModelTest {
         val state = viewModel.uiState.first()
         assertTrue(state.error == null)
         assertEquals(1, state.results.size)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
-    @Test
-    fun `initial state is not scanning with empty results`() = runTest {
-        // When
-        val state = viewModel.uiState.first()
-
-        // Then
-        assertFalse(state.isScanning)
-        assertEquals(0f, state.progress, 0.01f)
-        assertEquals("", state.currentApp)
-        assertTrue(state.results.isEmpty())
     }
 
     @Test

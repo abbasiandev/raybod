@@ -1,5 +1,6 @@
 package com.codekhoda.presentation.scan
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,7 +30,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.animation.*
+import androidx.compose.ui.draw.rotate
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.border
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,7 +52,8 @@ fun ScanScreen(
     permissionViewModel: PermissionViewModel = hiltViewModel(),
     userPlan: String = "FREEMIUM",
     onNavigateToSecurity: () -> Unit,
-    onNavigateToPremium: (() -> Unit)? = null
+    onNavigateToPremium: (() -> Unit)? = null,
+    onNavigateToThreatDetails: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val permissionState by permissionViewModel.uiState.collectAsState()
@@ -58,15 +62,54 @@ fun ScanScreen(
     var selectedAssessment by remember { mutableStateOf<RiskAssessment?>(null) }
     var showLowSpeedInfo by remember { mutableStateOf(false) }
     var showUpgradePrompt by remember { mutableStateOf(false) }
-    var showResultsSheet by remember { mutableStateOf(false) }
     var showRootInfo by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    var showFinishAnimation by remember { mutableStateOf(false) }
+
+    // Trigger finish animation
+    LaunchedEffect(state.isScanning) {
+        if (!state.isScanning && state.results.isNotEmpty()) {
+            showFinishAnimation = true
+            kotlinx.coroutines.delay(3000)
+            showFinishAnimation = false
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent,
+        bottomBar = {
+            if (state.isScanning) {
+                Surface(
+                    color = DeepBlack.copy(alpha = 0.95f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 32.dp)
+                            .navigationBarsPadding(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        ScanningQueue(
+                            recentApps = state.recentApps,
+                            results = state.results
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        CyberButton(
+                            text = "STOP SCAN",
+                            onClick = { viewModel.stopScan() },
+                            variant = ButtonVariant.SECONDARY,
+                            modifier = Modifier.fillMaxWidth(0.85f),
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                        )
+                    }
+                }
+            }
+        }
     ) { padding ->
         Box(
             modifier = Modifier
@@ -94,7 +137,7 @@ fun ScanScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
             ) {
                 item {
                     // Radar Visualization - More compact
@@ -161,7 +204,7 @@ fun ScanScreen(
                                 Spacer(modifier = Modifier.height(12.dp))
                                 CyberButton(
                                     text = "VIEW SCAN RESULTS",
-                                    onClick = { showResultsSheet = true },
+                                    onClick = { viewModel.setShowResultsSheet(true) },
                                     variant = ButtonVariant.GRADIENT,
                                     modifier = Modifier.fillMaxWidth(0.85f),
                                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
@@ -169,26 +212,12 @@ fun ScanScreen(
                             }
                         }
                     } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            ScanningStatus(
-                                currentApp = state.currentApp,
-                                currentAppLabel = state.currentAppLabel,
-                                scannedApps = state.scannedApps,
-                                totalApps = state.totalApps
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            ScanningQueue(recentApps = state.recentApps)
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            CyberButton(
-                                text = "STOP SCAN",
-                                onClick = { viewModel.stopScan() },
-                                variant = ButtonVariant.SECONDARY,
-                                modifier = Modifier.fillMaxWidth(0.85f),
-                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-                            )
-                        }
+                        ScanningStatus(
+                            currentApp = state.currentApp,
+                            currentAppLabel = state.currentAppLabel,
+                            scannedApps = state.scannedApps,
+                            totalApps = state.totalApps
+                        )
                     }
                 }
 
@@ -218,9 +247,9 @@ fun ScanScreen(
             }
 
             // Results Bottom Sheet
-            if (showResultsSheet) {
+            if (state.showResultsSheet) {
                 ModalBottomSheet(
-                    onDismissRequest = { showResultsSheet = false },
+                    onDismissRequest = { viewModel.setShowResultsSheet(false) },
                     sheetState = sheetState,
                     containerColor = DarkSurface,
                     scrimColor = Color.Black.copy(alpha = 0.7f)
@@ -242,8 +271,8 @@ fun ScanScreen(
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 2.sp
                             )
-                            IconButton(onClick = { showResultsSheet = false }) {
-                                Icon(Icons.Default.Star, contentDescription = "Close", tint = TextSecondary)
+                            IconButton(onClick = { viewModel.setShowResultsSheet(false) }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
                             }
                         }
 
@@ -293,15 +322,27 @@ fun ScanScreen(
                     RootInfoDialog(onDismiss = { showRootInfo = false })
                 }
             }
-            
+
             // Details Logic
             if (selectedAssessment != null) {
                 Dialog(onDismissRequest = { selectedAssessment = null }) {
                     ThreatDetailsScreen(
-                        assessment = selectedAssessment!!,
-                        onDismiss = { selectedAssessment = null }
+                        packageName = selectedAssessment!!.packageName,
+                        onNavigateBack = { selectedAssessment = null }
                     )
                 }
+            }
+
+            // Finish Animation Overlay
+            AnimatedVisibility(
+                visible = showFinishAnimation,
+                enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                exit = fadeOut() + scaleOut(targetScale = 1.2f),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                ScanCompleteAnimation(
+                    threatCount = state.results.count { it.riskLevel != RiskLevel.SAFE && it.riskLevel != RiskLevel.UNKNOWN }
+                )
             }
         }
     }
@@ -413,7 +454,10 @@ fun ScanningStatus(
 }
 
 @Composable
-fun ScanningQueue(recentApps: List<Pair<String, String>>) {
+fun ScanningQueue(
+    recentApps: List<Pair<String, String>>,
+    results: List<RiskAssessment>
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -429,6 +473,9 @@ fun ScanningQueue(recentApps: List<Pair<String, String>>) {
         
         recentApps.reversed().forEachIndexed { index, app ->
             val alpha = 1f - (index * 0.2f)
+            val assessment = results.find { it.packageName == app.first }
+            val isMalicious = assessment != null && assessment.riskLevel != RiskLevel.SAFE && assessment.riskLevel != RiskLevel.UNKNOWN
+            
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -439,13 +486,20 @@ fun ScanningQueue(recentApps: List<Pair<String, String>>) {
                 Box(
                     modifier = Modifier
                         .size(4.dp)
-                        .background(if (index == 0) NeonCyan else TextSecondary, CircleShape)
+                        .background(
+                            if (index == 0) NeonCyan 
+                            else if (isMalicious) AlertRed 
+                            else SafeGreen, 
+                            CircleShape
+                        )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = app.second,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (index == 0) TextPrimary else TextSecondary,
+                    color = if (index == 0) TextPrimary 
+                            else if (isMalicious) AlertRed.copy(alpha = 0.9f) 
+                            else TextSecondary,
                     maxLines = 1,
                     modifier = Modifier.weight(1f)
                 )
@@ -454,14 +508,16 @@ fun ScanningQueue(recentApps: List<Pair<String, String>>) {
                         text = "ANALYZING",
                         style = MaterialTheme.typography.labelSmall,
                         color = NeonCyan,
-                        fontSize = 8.sp
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 } else {
                     Text(
-                        text = "OK",
+                        text = if (isMalicious) "THREAT" else "CLEAN",
                         style = MaterialTheme.typography.labelSmall,
-                        color = SafeGreen.copy(alpha = 0.7f),
-                        fontSize = 8.sp
+                        color = if (isMalicious) AlertRed else SafeGreen.copy(alpha = 0.7f),
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -521,7 +577,7 @@ fun ResultItemCard(
             }
             
             Icon(
-                imageVector = androidx.compose.material.icons.Icons.Filled.ArrowForward,
+                imageVector = Icons.Default.ArrowForward,
                 contentDescription = "Details",
                 tint = TextSecondary
             )
@@ -801,6 +857,104 @@ fun RootInfoDialog(onDismiss: () -> Unit) {
                 variant = ButtonVariant.DANGER,
                 glowColor = AlertRed,
                 modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun ScanCompleteAnimation(threatCount: Int) {
+    val infiniteTransition = rememberInfiniteTransition(label = "finish")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.85f)),
+        contentAlignment = Alignment.Center
+    ) {
+        // Background Glow
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            (if (threatCount > 0) AlertRed else SafeGreen).copy(alpha = 0.3f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(contentAlignment = Alignment.Center) {
+                // Rotating Hexagon or Circle
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(150.dp)
+                        .scale(scale)
+                        .rotate(rotation),
+                    tint = if (threatCount > 0) AlertRed else SafeGreen
+                )
+                
+                // Success/Alert Icon
+                Icon(
+                    imageVector = if (threatCount > 0) Icons.Default.Warning else Icons.Default.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(60.dp),
+                    tint = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = if (threatCount > 0) "ANALYSIS COMPLETE" else "SYSTEM SECURE",
+                style = MaterialTheme.typography.headlineMedium,
+                color = if (threatCount > 0) AlertRed else SafeGreen,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 4.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = if (threatCount > 0) "$threatCount POTENTIAL THREATS DETECTED" else "NO THREATS FOUND",
+                style = MaterialTheme.typography.titleMedium,
+                color = TextPrimary,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = "PROTECTION ACTIVE",
+                style = MaterialTheme.typography.labelLarge,
+                color = NeonCyan,
+                modifier = Modifier
+                    .border(1.dp, NeonCyan, CircleShape)
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
             )
         }
     }

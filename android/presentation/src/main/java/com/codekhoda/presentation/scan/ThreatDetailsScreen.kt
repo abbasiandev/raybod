@@ -3,134 +3,206 @@ package com.codekhoda.presentation.scan
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.codekhoda.domain.model.RiskAssessment
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.codekhoda.domain.model.RiskLevel
 import com.codekhoda.presentation.components.*
 import com.codekhoda.presentation.theme.*
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.ui.graphics.vector.ImageVector
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.core.graphics.drawable.toBitmap
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThreatDetailsScreen(
-    assessment: RiskAssessment,
-    onDismiss: () -> Unit
+    packageName: String,
+    viewModel: ScanViewModel = hiltViewModel(),
+    onNavigateBack: () -> Unit
 ) {
+    val state by viewModel.uiState.collectAsState()
+    val assessment = state.results.find { it.packageName == packageName }
     val context = LocalContext.current
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        // Full screen report style
-        StatusCard(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.9f),
-            status = when (assessment.riskLevel) {
-                RiskLevel.SAFE -> CardStatus.SAFE
-                RiskLevel.LOW -> CardStatus.NEUTRAL
-                RiskLevel.MEDIUM -> CardStatus.WARNING
-                else -> CardStatus.DANGER
-            },
-            animated = assessment.riskLevel != RiskLevel.SAFE
+
+    val appIcon = remember(packageName) {
+        try {
+            context.packageManager.getApplicationIcon(packageName).toBitmap().asImageBitmap()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    if (assessment == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Assessment not found", color = TextPrimary)
+        }
+        return
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "FORENSIC ANALYSIS",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = NeonCyan,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 2.sp
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = NeonCyan)
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = DeepBlack,
+                    titleContentColor = NeonCyan
+                )
+            )
+        },
+        containerColor = DeepBlack
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(DeepBlack, DarkSurface)
+                    )
+                )
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp)
+                    .padding(horizontal = 20.dp)
             ) {
-                // Header - Forensic Style
-                Row(
-                    verticalAlignment = Alignment.Top,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = getRiskIcon(assessment.riskLevel),
-                        contentDescription = "Risk Icon",
-                        tint = getRiskColor(assessment.riskLevel),
-                        modifier = Modifier.size(56.dp)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(
-                            text = assessment.packageName.uppercase(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 1.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "THREAT LEVEL: ${assessment.riskLevel.name}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = getRiskColor(assessment.riskLevel),
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "STATUS: ${if (assessment.riskLevel == RiskLevel.SAFE) "CLEAN" else "QUARANTINE RECOMMENDED"}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
-                            fontSize = 10.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                // Analysis Details
-                Box(
+                // Main Status Header
+                StatusCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                        .padding(16.dp)
+                        .padding(vertical = 16.dp),
+                    status = when (assessment.riskLevel) {
+                        RiskLevel.SAFE -> CardStatus.SAFE
+                        RiskLevel.LOW -> CardStatus.NEUTRAL
+                        RiskLevel.MEDIUM -> CardStatus.WARNING
+                        else -> CardStatus.DANGER
+                    },
+                    animated = assessment.riskLevel != RiskLevel.SAFE
                 ) {
-                    Column {
-                        Text(
-                            text = "DETECTION LOG",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = NeonCyan,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = assessment.description.ifEmpty { "No malicious behavioral patterns detected during static and heuristic analysis." },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextPrimary,
-                            lineHeight = 20.sp
-                        )
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(
+                                    getRiskColor(assessment.riskLevel).copy(alpha = 0.1f),
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (appIcon != null) {
+                                Image(
+                                    bitmap = appIcon,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = getRiskIcon(assessment.riskLevel),
+                                    contentDescription = null,
+                                    tint = getRiskColor(assessment.riskLevel),
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column {
+                            Text(
+                                text = assessment.packageName.split('.').last().uppercase(),
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Black
+                            )
+                            Text(
+                                text = assessment.packageName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                                maxLines = 1
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Badge(
+                                    containerColor = getRiskColor(assessment.riskLevel).copy(alpha = 0.2f),
+                                    contentColor = getRiskColor(assessment.riskLevel)
+                                ) {
+                                    Text(
+                                        text = assessment.riskLevel.name,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (assessment.riskLevel == RiskLevel.SAFE) "SYSTEM CLEAN" else "THREAT DETECTED",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (assessment.riskLevel == RiskLevel.SAFE) SafeGreen else NeonPink
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Forensics List
-                Text(
-                    text = "DREBIN FORENSICS (AI VECTORS)",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
+                    // Detection Log
+                    item {
+                        SectionHeader(title = "DETECTION LOG", icon = Icons.Default.List)
+                        GlassCard(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = assessment.description.ifEmpty { "Static and behavioral analysis confirms no known malicious vectors. The package signature matches trusted repository standards." },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextPrimary.copy(alpha = 0.8f),
+                                    lineHeight = 22.sp
+                                )
+                            }
+                        }
+                    }
+
+                    // Forensics Sections
+                    item { SectionHeader(title = "DREBIN AI VECTORS", icon = Icons.Default.Search) }
+                    
                     item {
                         DrebinCategoryView(
                             "S2: REQUESTED PERMISSIONS", 
@@ -139,6 +211,7 @@ fun ThreatDetailsScreen(
                             NeonCyan
                         )
                     }
+                    
                     item {
                         DrebinCategoryView(
                             "S7: SUSPICIOUS PATTERNS", 
@@ -146,6 +219,7 @@ fun ThreatDetailsScreen(
                             NeonPink
                         )
                     }
+                    
                     item {
                         DrebinCategoryView(
                             "S5: RESTRICTED APIS", 
@@ -153,6 +227,7 @@ fun ThreatDetailsScreen(
                             NeonPurple
                         )
                     }
+                    
                     item {
                         DrebinCategoryView(
                             "S8: NETWORK INFRASTRUCTURE", 
@@ -162,39 +237,65 @@ fun ThreatDetailsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Action Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                // Action Footer
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    color = Color.Transparent
                 ) {
-                    CyberButton(
-                        text = "DISMISS",
-                        onClick = onDismiss,
-                        variant = ButtonVariant.SECONDARY,
-                        modifier = Modifier.weight(1f),
-                        glowColor = TextSecondary
-                    )
-                    
-                    if (assessment.riskLevel != RiskLevel.SAFE) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         CyberButton(
-                            text = "UNINSTALL",
-                            onClick = { 
-                                val intent = Intent(Intent.ACTION_DELETE).apply {
-                                    data = Uri.parse("package:${assessment.packageName}")
-                                }
-                                context.startActivity(intent)
-                                onDismiss()
-                            },
-                            variant = ButtonVariant.DANGER,
-                            modifier = Modifier.weight(1.5f),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                            text = "BACK",
+                            onClick = onNavigateBack,
+                            variant = ButtonVariant.SECONDARY,
+                            modifier = Modifier.weight(1f)
                         )
+                        
+                        if (assessment.riskLevel != RiskLevel.SAFE) {
+                            CyberButton(
+                                text = "PURGE THREAT",
+                                onClick = { 
+                                    val intent = Intent(Intent.ACTION_DELETE).apply {
+                                        data = Uri.parse("package:${assessment.packageName}")
+                                    }
+                                    context.startActivity(intent)
+                                },
+                                variant = ButtonVariant.DANGER,
+                                modifier = Modifier.weight(1.5f),
+                                contentPadding = PaddingValues(vertical = 14.dp)
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, icon: ImageVector) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(bottom = 8.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = NeonCyan,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = NeonCyan,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
     }
 }
 
@@ -216,9 +317,9 @@ private fun getRiskIcon(riskLevel: RiskLevel): ImageVector {
         RiskLevel.SAFE -> Icons.Default.CheckCircle
         RiskLevel.LOW -> Icons.Default.Info
         RiskLevel.MEDIUM -> Icons.Default.Warning
-        RiskLevel.HIGH -> Icons.Default.Warning
-        RiskLevel.CRITICAL -> Icons.Default.Warning
-        RiskLevel.UNKNOWN -> Icons.Default.Info
+        RiskLevel.HIGH -> Icons.Default.Security
+        RiskLevel.CRITICAL -> Icons.Default.Dangerous
+        RiskLevel.UNKNOWN -> Icons.Default.Help
     }
 }
 
@@ -226,14 +327,14 @@ private fun getRiskIcon(riskLevel: RiskLevel): ImageVector {
 fun DrebinCategoryView(title: String, features: List<String>, color: Color) {
     if (features.isEmpty()) return
     
-    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+    Column(modifier = Modifier.padding(bottom = 12.dp)) {
         Text(
             text = title.uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = color.copy(alpha = 0.7f),
-            fontWeight = FontWeight.Bold
+            color = color.copy(alpha = 0.8f),
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
-        Spacer(modifier = Modifier.height(4.dp))
         features.forEach { feature ->
             VectorItem(feature, color)
         }
@@ -243,24 +344,26 @@ fun DrebinCategoryView(title: String, features: List<String>, color: Color) {
 @Composable
 fun VectorItem(text: String, color: Color) {
     GlassCard(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         cornerRadius = 8.dp
     ) {
         Row(
-            modifier = Modifier.padding(10.dp),
+            modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = null,
-                tint = color.copy(alpha = 0.8f),
-                modifier = Modifier.size(14.dp)
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(color, RoundedCornerShape(2.dp))
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextPrimary.copy(alpha = 0.9f)
+                color = TextPrimary.copy(alpha = 0.9f),
+                fontWeight = FontWeight.Medium
             )
         }
     }

@@ -26,6 +26,8 @@ import com.codekhoda.presentation.permissions.PermissionDashboardScreen
 import com.codekhoda.presentation.network.NetworkDashboardScreen
 import com.codekhoda.presentation.paywall.PremiumScreen
 import com.codekhoda.presentation.scan.ScanScreen
+import com.codekhoda.presentation.scan.ScanViewModel
+import com.codekhoda.presentation.scan.ThreatDetailsScreen
 import com.codekhoda.presentation.theme.HybridCloudSentinelTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -74,10 +76,27 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.padding(paddingValues)
                         ) {
                             composable("scan") {
+                                val scanViewModel: ScanViewModel = hiltViewModel()
                                 ScanScreen(
+                                    viewModel = scanViewModel,
                                     userPlan = userPlan,
                                     onNavigateToSecurity = { navController.navigate("security") },
-                                    onNavigateToPremium = { navController.navigate("premium") }
+                                    onNavigateToPremium = { navController.navigate("premium") },
+                                    onNavigateToThreatDetails = { packageName ->
+                                        navController.navigate("threat_details/$packageName")
+                                    }
+                                )
+                            }
+                            composable("threat_details/{packageName}") { backStackEntry ->
+                                val packageName = backStackEntry.arguments?.getString("packageName") ?: ""
+                                val parentEntry = remember(backStackEntry) {
+                                    navController.getBackStackEntry("scan")
+                                }
+                                val scanViewModel: ScanViewModel = hiltViewModel(parentEntry)
+                                ThreatDetailsScreen(
+                                    packageName = packageName,
+                                    viewModel = scanViewModel,
+                                    onNavigateBack = { navController.popBackStack() }
                                 )
                             }
                             composable("network") {

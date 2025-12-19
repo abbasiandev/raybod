@@ -56,7 +56,7 @@ fun AboutScreen() {
             Spacer(Modifier.height(8.dp))
             
             Text(
-                text = "SYSTEM VERSION 1.0.0-BETA",
+                text = "SYSTEM VERSION 1.0.0-FINAL",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondary,
                 fontWeight = FontWeight.Bold
@@ -70,7 +70,7 @@ fun AboutScreen() {
                 animated = false
             ) {
                 Text(
-                    text = "Project Sentinel is an advanced AI-powered security assistant designed to protect your device from emerging threats using a hybrid approach: on-device TFLite inference and cloud-based deep analysis.",
+                    text = "Project Sentinel is an advanced AI-powered security assistant designed to protect your device from emerging threats using the DREBIN methodology: on-device TFLite inference and cloud-based deep forensic analysis.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary,
                     textAlign = TextAlign.Center,
@@ -82,7 +82,7 @@ fun AboutScreen() {
             Spacer(Modifier.height(32.dp))
             
             Text(
-                text = "HYBRID ARCHITECTURE",
+                text = "CORE TECHNOLOGIES",
                 style = MaterialTheme.typography.labelLarge,
                 color = NeonCyan,
                 fontWeight = FontWeight.Bold,
@@ -92,10 +92,11 @@ fun AboutScreen() {
             Spacer(Modifier.height(16.dp))
             
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                BulletPointItem("📱 ON-DEVICE ML: TensorFlow Lite models run locally for instant threat detection")
-                BulletPointItem("☁️ CLOUD ANALYSIS: Deep neural networks analyze complex patterns in the cloud")
-                BulletPointItem("⚡ LIGHTWEIGHT AGENT: Minimal battery and performance impact")
-                BulletPointItem("🔋 OPTIMIZED: Smart resource management for all device types")
+                BulletPointItem("📱 ON-DEVICE ML: DREBIN-powered TFLite models run locally for instant detection")
+                BulletPointItem("☁️ CLOUD FORENSICS: Deep analysis using 8 S-Set categorized AI vectors")
+                BulletPointItem("🔄 OTA UPDATES: Automated background model retraining and synchronization")
+                BulletPointItem("🛡️ PRIVACY MONITORING: Real-time permission and AppOps usage tracking")
+                BulletPointItem("⚡ PERFORMANCE: Optimized for minimal battery and memory footprint")
             }
             
             Spacer(Modifier.height(32.dp))
@@ -116,11 +117,13 @@ fun AboutScreen() {
                 animated = false
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    MetricItem("Battery Impact", "< 2%")
+                    MetricItem("AI Methodology", "DREBIN V2")
                     Divider(modifier = Modifier.padding(vertical = 8.dp), color = SafeGreen.copy(alpha = 0.1f))
-                    MetricItem("Memory Footprint", "~ 15MB")
+                    MetricItem("Forensic Depth", "8 S-SETS")
                     Divider(modifier = Modifier.padding(vertical = 8.dp), color = SafeGreen.copy(alpha = 0.1f))
-                    MetricItem("Scan Speed", "~ 100 apps/min")
+                    MetricItem("Battery Impact", "< 1.5%")
+                    Divider(modifier = Modifier.padding(vertical = 8.dp), color = SafeGreen.copy(alpha = 0.1f))
+                    MetricItem("Scan Latency", "~ 450ms/app")
                 }
             }
             

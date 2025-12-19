@@ -17,6 +17,14 @@ class AppMetadata(BaseModel):
     permissions: List[str] = []
     # NEW OPTIONAL FIELDS (backward compatible)
     intents: List[str] = []
+    activities: List[str] = []
+    services: List[str] = []
+    receivers: List[str] = []
+    providers: List[str] = []
+    app_size: Optional[int] = None
+    category: Optional[str] = None
+    target_sdk: Optional[int] = None
+    description_hash: Optional[str] = None
     version_name: Optional[str] = None
     install_time: Optional[int] = None
     last_update_time: Optional[int] = None

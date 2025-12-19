@@ -71,3 +71,23 @@ def test_non_mobile_payment_process_success_stay_on_web(client):
     assert "Payment Successful" in response.text
     assert "codekhoda://" not in response.text
 
+def test_mobile_checkout_post_redirect(client):
+    """Test the POST /api/v1/public/checkout endpoint with mobile=true."""
+    # 1. Checkout session via POST
+    response = client.post(
+        "/api/v1/public/checkout",
+        data={"plan_id": "FEATURED", "mobile": "true"},
+        follow_redirects=False
+    )
+    assert response.status_code == 303
+    session_id = response.headers["location"].split("/")[-1]
+    
+    # 2. Process success
+    response = client.post(
+        "/api/v1/public/payment/process",
+        data={"session_id": session_id, "success": "true"},
+        follow_redirects=False
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "codekhoda://payment-result?status=success"
+
