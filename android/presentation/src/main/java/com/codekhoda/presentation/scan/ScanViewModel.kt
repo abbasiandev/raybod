@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codekhoda.agent.scanner.PackageAnalyzer
 import com.codekhoda.domain.model.RiskAssessment
+import com.codekhoda.domain.model.RiskLevel
 import com.codekhoda.domain.usecase.ScanAppUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -77,11 +78,23 @@ class ScanViewModel @Inject constructor(
 
             // Only update to complete if scan wasn't cancelled
             if (isActive) {
+                // Sort results: Critical > High > Medium > Low > Safe > Unknown
+                val sortedResults = results.sortedByDescending { result ->
+                    when (result.riskLevel) {
+                        RiskLevel.CRITICAL -> 5
+                        RiskLevel.HIGH -> 4
+                        RiskLevel.MEDIUM -> 3
+                        RiskLevel.LOW -> 2
+                        RiskLevel.SAFE -> 1
+                        RiskLevel.UNKNOWN -> 0
+                    }
+                }
+                
                 _uiState.value = _uiState.value.copy(
                     isScanning = false,
                     progress = 1f,
                     currentApp = "Scan Complete",
-                    results = results
+                    results = sortedResults
                 )
             }
         }

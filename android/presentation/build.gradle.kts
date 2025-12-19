@@ -44,6 +44,7 @@ dependencies {
     
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
     
     // Need agent module for PackageAnalyzer
     implementation(project(":agent"))

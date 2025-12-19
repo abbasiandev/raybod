@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -46,7 +47,15 @@ class SentinelService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(ONGOING_NOTIFICATION_ID, createOngoingNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                ONGOING_NOTIFICATION_ID, 
+                createOngoingNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else {
+            startForeground(ONGOING_NOTIFICATION_ID, createOngoingNotification())
+        }
 
         if (intent?.action == ACTION_SCAN_PACKAGE) {
             val packageName = intent.getStringExtra(EXTRA_PACKAGE_NAME)
