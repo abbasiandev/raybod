@@ -66,9 +66,16 @@ Authentication is implemented for all non-public endpoints.
 ### 🧠 Model & ML Endpoints
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/v1/models/latest` | Get metadata for the latest TFLite model |
+| `GET` | `/api/v1/models/current` | Get metadata for the latest active TFLite model |
 | `GET` | `/api/v1/models/download/{version}` | Download specific model version |
 | `POST` | `/api/v1/models/retrain` | Trigger automated model retraining |
+
+### 🔍 Threat Intel Endpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `https://raw.githubusercontent.com/codekhoda/threat-intel/main/package_lists.json` | Remote package lists (Whitelist/Blacklist) |
+| `GET` | `/api/v1/allowlist/check/{package}` | Check if a package is in the global allowlist |
+| `GET` | `/api/v1/reputation/{package}` | Get global reputation score for a package |
 
 ### 👤 User & Subscription Endpoints
 | Method | Endpoint | Description |

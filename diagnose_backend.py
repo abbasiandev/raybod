@@ -3,7 +3,7 @@ import json
 import uuid
 import time
 
-BASE_URL = "https://codekhoda-sentinel-brain.liara.run"
+BASE_URL = "http://localhost:8000"
 DEVICE_ID = str(uuid.uuid4())
 
 def test_endpoint(name, method, path, json_data=None, params=None):

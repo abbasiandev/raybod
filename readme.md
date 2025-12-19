@@ -95,6 +95,7 @@ The Cloud Brain is deployed and accessible at:
 | **Health Check** | https://codekhoda-sentinel-brain.liara.run/health |
 | **API Documentation** | https://codekhoda-sentinel-brain.liara.run/docs |
 | **Scan Endpoint** | https://codekhoda-sentinel-brain.liara.run/api/v1/scan/analyze |
+| **Threat Intel (Web)**| [Package Lists JSON](https://raw.githubusercontent.com/codekhoda/threat-intel/main/package_lists.json) |
 
 ### Infrastructure
 
@@ -103,6 +104,19 @@ The Cloud Brain is deployed and accessible at:
 | **Backend** | [Liara](https://liara.ir) | Docker container on free tier |
 | **Database** | PostgreSQL 18.0 | `sentinel-db` on Liara |
 | **Network** | Private network | Connects app and database |
+| **Intel Source** | GitHub | Dynamic threat signatures (OTA) |
+
+---
+
+## 🛡️ Hybrid Security Matrix
+
+We utilize a multi-layered approach to threat detection:
+
+1.  **L1: Local Whitelist (System)**: Fast bypass for verified system/OS apps.
+2.  **L2: Local TFLite Model**: On-device AI for instant heuristic flagging.
+3.  **L3: Cloud Allow/Blocklist**: Real-time verification against global threat databases.
+4.  **L4: External Intelligence**: Dynamic fetching of signatures from GitHub and VirusTotal.
+5.  **L5: Contextual Analysis**: Correlating app categories with requested permissions.
 
 ---
 

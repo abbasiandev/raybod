@@ -3,6 +3,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 import os
+import requests
+import json
+from app.core.config import settings
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sentinel_brain.db")
 
@@ -57,22 +60,83 @@ def init_db(seed=True):
 
     db = SessionLocal()
     try:
-        # Seed allowlist if empty
-        if not db.query(AllowlistEntry).first():
-            seeds = [
-                "com.android.chrome",
-                "com.google.android.apps.maps",
-                "com.whatsapp"
+        # Seed allowlist and blocklist if empty
+        if not db.query(AllowlistEntry).first() and not db.query(BlocklistEntry).first():
+            # Fallback hardcoded lists
+            fallback_whitelist = [
+                "com.google.android.gms", "com.android.vending", "org.thoughtcrime.securesms",
+                "com.google.android.apps.docs", "com.google.android.apps.docs.editors.docs",
+                "com.whatsapp", "com.skype.raider", "com.Slack", "com.instagram.android",
+                "jp.naver.line.android", "com.google.android.apps.messaging", "com.google.android.gm",
+                "com.microsoft.office.outlook", "com.yahoo.mobile.client.android.mail",
+                "com.samsung.android.messaging", "com.android.mms", "com.google.android.networkstack",
+                "com.android.chrome", "com.dropbox.android", "com.pinterest", "com.google.android.apps.tips",
+                "com.google.android.factoryota", "com.android.managedprovisioning", "com.android.vpndialogs",
+                "com.google.android.apps.maps", "com.google.android.keep", "com.google.android.googlequicksearchbox",
+                "com.termux", "org.jssec.android.activity.partneractivity", "org.jssec.android.activity.partneruser",
+                "com.android.internal.systemui.navbar.twobutton", "com.android.internal.systemui.navbar.threebutton"
             ]
-            for p in seeds:
-                db.add(AllowlistEntry(package_name=p))
+            fallback_blacklist = [
+                ("com.gzrtnq.Bumble", "Malware"),
+                ("com.wondershare.famisafe.kids", "PUA"),
+                ("com.Android.core.mntac", "Stalkerware (Hoverwatch)"),
+                ("com.celphtr.rodes", "Stalkerware"),
+                ("child.monitor.app", "Stalkerware"),
+                ("project.antitheft", "Stalkerware"),
+                ("com.trphwhat.prob", "Stalkerware"),
+                ("com.viva.recoverymyfileprank", "Stalkerware"),
+                ("com.calltracker.calltracker", "Stalkerware"),
+                ("find.my.device.tracking", "Stalkerware"),
+                ("com.appmartspace.eazytracker", "Stalkerware"),
+                ("com.restore.backup.free.prov", "Stalkerware"),
+                ("com.track.lost.cell.phone.lite.lost.device.tracker.lite", "Stalkerware"),
+                ("khabarizone.mobilenumberlocationtracker", "Stalkerware"),
+                ("com.dubaigamesstudio.voicecallrecorderfree", "Stalkerware"),
+                ("com.internaliagroup.seguridad360", "Stalkerware"),
+                ("com.picturesrecovery.restorefilesfree", "Stalkerware"),
+                ("gbwhatsaap.aplijmz", "Stalkerware"),
+                ("com.geotou.findmyfamily", "Stalkerware"),
+                ("com.automaticcallrecorder2016free.callrecorderpro", "Stalkerware"),
+                ("com.octadata.videorecover", "Stalkerware"),
+                ("com.Mob123.Izen456", "Stalkerware"),
+                ("com.genericsnippet.funnyecards", "Malware (Dropper)"),
+                ("com.leixun.taofen8_boyangjiafang", "Stalkerware"),
+                ("com.ltdevelopergroups.litecleaner.m.service.NotificationListener", "Stalkerware")
+            ]
+
+            # Try to fetch from web
+            try:
+                response = requests.get(settings.PACKAGE_LIST_URL, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    whitelist = data.get("whitelist", fallback_whitelist)
+                    blacklist_raw = data.get("blacklist", [])
+                    # Blacklist in JSON might be just names or (name, type) pairs
+                    blacklist = []
+                    for item in blacklist_raw:
+                        if isinstance(item, list) or isinstance(item, tuple):
+                            blacklist.append(tuple(item))
+                        else:
+                            blacklist.append((item, "Known Malware"))
+                    
+                    if not blacklist:
+                        blacklist = fallback_blacklist
+                else:
+                    whitelist = fallback_whitelist
+                    blacklist = fallback_blacklist
+            except Exception:
+                whitelist = fallback_whitelist
+                blacklist = fallback_blacklist
+
+            # Seed allowlist
+            for p in whitelist:
+                if not db.query(AllowlistEntry).filter(AllowlistEntry.package_name == p).first():
+                    db.add(AllowlistEntry(package_name=p))
             
-            bad_seeds = [
-                ("com.example.virus", "Known Malware"),
-                ("com.spyware.tracker", "Known Malware")
-            ]
-            for p, t in bad_seeds:
-                db.add(BlocklistEntry(package_name=p, threat_type=t))
+            # Seed blocklist
+            for p, t in blacklist:
+                if not db.query(BlocklistEntry).filter(BlocklistEntry.package_name == p).first():
+                    db.add(BlocklistEntry(package_name=p, threat_type=t))
             
             db.commit()
         
@@ -133,6 +197,33 @@ def init_db(seed=True):
                     plan="FEATURED"
                 )
                 db.add(admin_user)
+                db.commit()
+
+        # Seed default model if empty
+        if not db.query(ModelVersion).first():
+            model_filename = "sentinel_v1.0.0.tflite"
+            # Current file is backend/app/core/database.py
+            # Target is backend/app/static/models/sentinel_v1.0.0.tflite
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            full_path = os.path.join(base_dir, "static", "models", model_filename)
+            
+            if os.path.exists(full_path):
+                file_size = os.path.getsize(full_path)
+                import hashlib
+                sha256_hash = hashlib.sha256()
+                with open(full_path, "rb") as f:
+                    for byte_block in iter(lambda: f.read(4096), b""):
+                        sha256_hash.update(byte_block)
+                
+                checksum = sha256_hash.hexdigest()
+                
+                db.add(ModelVersion(
+                    version="1.0.0",
+                    file_path=full_path,
+                    file_size=file_size,
+                    checksum_sha256=checksum,
+                    is_active=True
+                ))
                 db.commit()
     finally:
         db.close()
