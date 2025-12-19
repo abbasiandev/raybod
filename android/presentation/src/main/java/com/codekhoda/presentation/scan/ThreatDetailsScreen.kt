@@ -96,7 +96,7 @@ fun ThreatDetailsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 16.dp)
             ) {
                 // Main Status Header
                 StatusCard(

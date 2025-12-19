@@ -19,8 +19,23 @@ class ModelUpdateWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        Log.d("ModelUpdateWorker", "Starting background model sync...")
+        Log.d("ModelUpdateWorker", "Starting background sync...")
         
+        // 1. Update Package Lists (Whitelist/Blacklist)
+        try {
+            val remoteLists = modelUpdateService.getRemotePackageLists()
+            if (remoteLists != null) {
+                val whitelist = remoteLists["whitelist"]?.toSet()
+                if (whitelist != null) {
+                    com.codekhoda.domain.filter.SystemPackageFilter.updateExcludedPackages(whitelist)
+                    Log.d("ModelUpdateWorker", "Remote whitelist updated with ${whitelist.size} packages")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("ModelUpdateWorker", "Failed to update package lists: ${e.message}")
+        }
+
+        // 2. Update ML Model
         val sharedPrefs = applicationContext.getSharedPreferences("sentinel_prefs", Context.MODE_PRIVATE)
         val currentVersion = sharedPrefs.getString("model_version", "1.0.0") ?: "1.0.0"
         

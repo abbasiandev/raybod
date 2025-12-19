@@ -86,7 +86,7 @@ object DataModule {
     @Singleton
     fun provideRetrofit(okHttpClient: okhttp3.OkHttpClient): retrofit2.Retrofit {
         return retrofit2.Retrofit.Builder()
-            .baseUrl("https://codekhoda-sentinel-brain.liara.run/") // Live Liara Backend
+            .baseUrl("https://codekhoda-backend.liara.run/") // Updated to new backend URL
             .client(okHttpClient)
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()

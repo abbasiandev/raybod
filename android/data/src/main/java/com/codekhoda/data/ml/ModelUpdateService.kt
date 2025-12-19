@@ -24,5 +24,13 @@ class ModelUpdateService @Inject constructor(
             null
         }
     }
+
+    suspend fun getRemotePackageLists(): Map<String, List<String>>? {
+        return try {
+            api.getRemotePackageLists()
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
 

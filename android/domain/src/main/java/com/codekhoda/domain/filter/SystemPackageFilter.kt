@@ -37,9 +37,50 @@ object SystemPackageFilter {
      * List of specific package names to exclude from scanning.
      * These include system apps, manufacturer apps, and known safe packages.
      */
-    private val excludedPackages = setOf(
+    private val excludedPackages = mutableSetOf(
         // Google services and subscriptions
+        "com.google.android.gms",
+        "com.android.vending",
+        "com.google.android.apps.docs",
+        "com.google.android.apps.docs.editors.docs",
+        "com.google.android.apps.messaging",
+        "com.google.android.gm",
+        "com.google.android.networkstack",
+        "com.google.android.apps.tips",
+        "com.google.android.factoryota",
+        "com.google.android.apps.maps",
+        "com.google.android.keep",
+        "com.google.android.googlequicksearchbox",
         "com.google.android.apps.subscriptions.red",
+        
+        // Trusted Communication & Productivity
+        "org.thoughtcrime.securesms",
+        "com.whatsapp",
+        "com.skype.raider",
+        "com.Slack",
+        "com.instagram.android",
+        "jp.naver.line.android",
+        "com.microsoft.office.outlook",
+        "com.yahoo.mobile.client.android.mail",
+        "com.dropbox.android",
+        "com.pinterest",
+        "com.termux",
+        
+        // System & Security Partners
+        "org.jssec.android.activity.partneractivity",
+        "org.jssec.android.activity.partneruser",
+        
+        // Samsung & Android System Components
+        "com.samsung.android.messaging",
+        "com.android.mms",
+        "com.android.chrome",
+        "com.android.managedprovisioning",
+        "com.android.vpndialogs",
+        "com.android.internal.systemui.navbar.twobutton",
+        "com.android.internal.systemui.navbar.threebutton",
+        "com.android.cellbroadcastreceiver.overlay.common",
+        "com.android.internal.systemui.navbar.gestural_narrow_back",
+        "com.android.settings.resource.overlay",
         
         // Qualcomm system services
         "com.qualcomm.qti.qcolor",
@@ -54,14 +95,19 @@ object SystemPackageFilter {
         "com.miui.face",
         "com.miui.fmservice",
         
-        // Android system components
-        "com.android.cellbroadcastreceiver.overlay.common",
-        "com.android.internal.systemui.navbar.gestural_narrow_back",
-        "com.android.settings.resource.overlay",
-        
-        // Facebook system services (pre-installed on some devices)
-        "com.facebook.appmanager"
+        // Facebook system services
+        "com.facebook.appmanager",
+        "com.facebook.services"
     )
+
+    /**
+     * Update the excluded packages list from a remote source.
+     */
+    fun updateExcludedPackages(newPackages: Set<String>) {
+        synchronized(excludedPackages) {
+            excludedPackages.addAll(newPackages)
+        }
+    }
 
     /**
      * Known safe developer certificate signatures (SHA-256).

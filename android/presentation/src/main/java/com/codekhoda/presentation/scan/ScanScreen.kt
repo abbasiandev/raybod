@@ -59,7 +59,6 @@ fun ScanScreen(
     val permissionState by permissionViewModel.uiState.collectAsState()
     
     val vulnerablePermission = permissionState.permissions.find { !it.isGranted }
-    var selectedAssessment by remember { mutableStateOf<RiskAssessment?>(null) }
     var showLowSpeedInfo by remember { mutableStateOf(false) }
     var showUpgradePrompt by remember { mutableStateOf(false) }
     var showRootInfo by remember { mutableStateOf(false) }
@@ -287,7 +286,7 @@ fun ScanScreen(
                                 ResultItemCard(
                                     result = result,
                                     onClick = { 
-                                        selectedAssessment = result
+                                        onNavigateToThreatDetails(result.packageName)
                                     }
                                 )
                             }
@@ -320,16 +319,6 @@ fun ScanScreen(
             if (showRootInfo) {
                 Dialog(onDismissRequest = { showRootInfo = false }) {
                     RootInfoDialog(onDismiss = { showRootInfo = false })
-                }
-            }
-
-            // Details Logic
-            if (selectedAssessment != null) {
-                Dialog(onDismissRequest = { selectedAssessment = null }) {
-                    ThreatDetailsScreen(
-                        packageName = selectedAssessment!!.packageName,
-                        onNavigateBack = { selectedAssessment = null }
-                    )
                 }
             }
 

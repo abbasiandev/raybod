@@ -35,6 +35,9 @@ interface CloudBrainApi {
     @GET("api/v1/auth/me")
     suspend fun getCurrentUser(): UserDto
 
-    @POST("api/v1/network/analyze")
+    @GET("api/v1/network/analyze")
     suspend fun analyzeNetwork(@Body request: NetworkAnalysisRequestDto): NetworkAnalysisResultDto
+
+    @GET("https://raw.githubusercontent.com/codekhoda/threat-intel/main/package_lists.json")
+    suspend fun getRemotePackageLists(): Map<String, List<String>>
 }
