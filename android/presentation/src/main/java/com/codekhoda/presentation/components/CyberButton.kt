@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.codekhoda.presentation.theme.*
 
@@ -59,45 +60,47 @@ fun CyberButton(
         label = "GlowAlpha"
     )
 
-    val backgroundColor = when (variant) {
-        ButtonVariant.PRIMARY -> Brush.horizontalGradient(
-            colors = listOf(glowColor, glowColor.copy(alpha = 0.8f))
-        )
-        ButtonVariant.SECONDARY -> Brush.horizontalGradient(
-            colors = listOf(Color.Transparent, Color.Transparent)
-        )
-        ButtonVariant.DANGER -> Brush.horizontalGradient(
-            colors = listOf(AlertRed, CriticalMagenta)
-        )
-        ButtonVariant.GRADIENT -> Brush.horizontalGradient(
-            colors = listOf(GradientStart, GradientMiddle, GradientEnd)
-        )
-    }
-
     val textColor = when (variant) {
         ButtonVariant.PRIMARY -> DeepBlack
         ButtonVariant.SECONDARY -> glowColor
         ButtonVariant.DANGER -> Color.White
-        ButtonVariant.GRADIENT -> DeepBlack
+        ButtonVariant.GRADIENT -> Color.White
     }
 
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedCornerShape(8.dp)
 
     Box(
         modifier = modifier
             .scale(scale)
+            .heightIn(min = 48.dp)
             .drawBehind {
                 if (enabled) {
                     // Outer glow
                     drawRoundRect(
                         color = glowColor.copy(alpha = glowAlpha * 0.4f),
-                        cornerRadius = CornerRadius(16.dp.toPx()),
-                        style = Stroke(width = 12.dp.toPx())
+                        cornerRadius = CornerRadius(10.dp.toPx()),
+                        style = Stroke(width = 8.dp.toPx())
+                    )
+                    
+                    // Sharp neon edge
+                    drawRoundRect(
+                        color = glowColor.copy(alpha = 0.9f),
+                        cornerRadius = CornerRadius(8.dp.toPx()),
+                        style = Stroke(width = 2.dp.toPx())
                     )
                 }
             }
             .clip(shape)
-            .background(brush = backgroundColor, shape = shape)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = if (variant == ButtonVariant.SECONDARY) {
+                        listOf(Color.Transparent, Color.Transparent)
+                    } else {
+                        listOf(glowColor.copy(alpha = 0.9f), glowColor.copy(alpha = 0.7f))
+                    }
+                ),
+                shape = shape
+            )
             .then(
                 if (variant == ButtonVariant.SECONDARY) {
                     Modifier.border(
@@ -121,8 +124,9 @@ fun CyberButton(
         Text(
             text = text.uppercase(),
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = if (enabled) textColor else TextMuted
+            fontWeight = FontWeight.ExtraBold,
+            color = if (enabled) textColor else TextMuted,
+            textAlign = TextAlign.Center
         )
     }
 }

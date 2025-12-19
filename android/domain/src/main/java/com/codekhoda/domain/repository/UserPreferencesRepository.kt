@@ -14,4 +14,7 @@ interface UserPreferencesRepository {
 
     val lastScanTimestamp: Flow<Long>
     suspend fun setLastScanTimestamp(timestamp: Long)
+
+    val dailyScanCount: Flow<Int>
+    suspend fun setDailyScanCount(count: Int)
 }

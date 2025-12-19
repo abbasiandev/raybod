@@ -10,3 +10,4 @@ data class NetworkAlert(
     val timestamp: Long
 )
 
+

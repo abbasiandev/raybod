@@ -55,22 +55,22 @@ fun GlowingCard(
             .drawBehind {
                 // Outer glow effect
                 drawRoundRect(
-                    color = glowColor.copy(alpha = animatedAlpha * 0.3f),
+                    color = glowColor.copy(alpha = animatedAlpha * 0.2f),
                     cornerRadius = CornerRadius(cornerRadius.toPx() + 8.dp.toPx()),
-                    style = Stroke(width = 16.dp.toPx())
+                    style = Stroke(width = 12.dp.toPx())
                 )
                 // Inner glow
                 drawRoundRect(
-                    color = glowColor.copy(alpha = animatedAlpha * 0.5f),
-                    cornerRadius = CornerRadius(cornerRadius.toPx() + 4.dp.toPx()),
-                    style = Stroke(width = 8.dp.toPx())
+                    color = glowColor.copy(alpha = animatedAlpha * 0.4f),
+                    cornerRadius = CornerRadius(cornerRadius.toPx()),
+                    style = Stroke(width = 2.dp.toPx())
                 )
             }
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        CardSurface,
-                        CardSurface.copy(alpha = 0.95f)
+                        ElevatedSurface,
+                        CardSurface
                     )
                 ),
                 shape = shape
@@ -79,9 +79,9 @@ fun GlowingCard(
                 width = borderWidth,
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        glowColor.copy(alpha = 0.6f),
-                        glowColor.copy(alpha = 0.2f),
-                        glowColor.copy(alpha = 0.6f)
+                        glowColor.copy(alpha = 0.5f),
+                        glowColor.copy(alpha = 0.1f),
+                        glowColor.copy(alpha = 0.4f)
                     )
                 ),
                 shape = shape

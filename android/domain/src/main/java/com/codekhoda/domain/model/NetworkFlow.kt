@@ -14,3 +14,4 @@ data class NetworkFlow(
     val verdict: String? = null
 )
 
+

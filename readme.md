@@ -89,6 +89,9 @@ The Cloud Brain is deployed and accessible at:
 
 | Endpoint | URL |
 |----------|-----|
+| **Landing Page** | https://codekhoda-sentinel-brain.liara.run/ |
+| **Admin Dashboard** | https://codekhoda-sentinel-brain.liara.run/dashboard/ |
+| **Login Page** | https://codekhoda-sentinel-brain.liara.run/dashboard/login |
 | **Health Check** | https://codekhoda-sentinel-brain.liara.run/health |
 | **API Documentation** | https://codekhoda-sentinel-brain.liara.run/docs |
 | **Scan Endpoint** | https://codekhoda-sentinel-brain.liara.run/api/v1/scan/analyze |
@@ -98,8 +101,8 @@ The Cloud Brain is deployed and accessible at:
 | Component | Platform | Details |
 |-----------|----------|---------|
 | **Backend** | [Liara](https://liara.ir) | Docker container on free tier |
-| **Database** | PostgreSQL 18.0 | `codekhoda-db` on Liara |
-| **Network** | `codekhoda-network` | Private network connecting app and database |
+| **Database** | PostgreSQL 18.0 | `sentinel-db` on Liara |
+| **Network** | Private network | Connects app and database |
 
 ---
 
@@ -112,7 +115,7 @@ The Cloud Brain is deployed and accessible at:
 
 ### Option A: Use Live Backend (Recommended)
 
-The Android app is pre-configured to use the live Liara backend. Simply:
+The Android app is pre-configured to use the live Liara backend at `https://codekhoda-sentinel-brain.liara.run`. Simply:
 
 1. Clone the repository
 2. Open `android/` in Android Studio
@@ -180,14 +183,14 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 4. **Configure Database URL**:
    ```bash
-   liara env set --app your-app-name DATABASE_URL=postgresql://user:pass@your-db:5432/postgres
+   liara env set --app codekhoda-sentinel-brain DATABASE_URL=postgresql://user:pass@sentinel-db:5432/postgres
    ```
 
 ### Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://root:xxx@codekhoda-db:5432/postgres` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://root:xxx@sentinel-db:5432/postgres` |
 | `DEBUG` | Enable debug mode | `false` |
 
 ---

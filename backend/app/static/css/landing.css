@@ -77,6 +77,8 @@ body {
     transition: transform 0.3s ease, border-color 0.3s ease;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .card:hover {
@@ -118,6 +120,7 @@ body {
     padding: 0;
     margin: 30px 0;
     text-align: left;
+    flex-grow: 1;
 }
 
 .features li {
@@ -157,4 +160,25 @@ body {
 .btn:hover {
     filter: brightness(1.2);
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
+
+.btn-success {
+    background: #00c853;
+    color: white;
+    margin-bottom: 10px;
+}
+
+.btn-fail {
+    background: #ff1744;
+    color: white;
+}
+
+.sandbox-container {
+    max-width: 400px;
+    margin: 50px auto;
+    text-align: center;
+    background: var(--surface);
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid var(--accent-cyan);
 }

@@ -26,13 +26,13 @@
             <form action="/api/v1/public/payment/process" method="POST">
                 <input type="hidden" name="session_id" value="{{ session_id }}">
                 <input type="hidden" name="success" value="true">
-                <button type="submit" class="btn btn-success">Simulate Success</button>
+                <button type="submit" class="btn btn-success">Paid</button>
             </form>
 
             <form action="/api/v1/public/payment/process" method="POST">
                 <input type="hidden" name="session_id" value="{{ session_id }}">
                 <input type="hidden" name="success" value="false">
-                <button type="submit" class="btn btn-fail">Simulate Failure</button>
+                <button type="submit" class="btn btn-fail">Not Paid</button>
             </form>
         </div>
     </div>

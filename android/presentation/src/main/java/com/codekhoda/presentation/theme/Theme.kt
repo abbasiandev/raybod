@@ -22,18 +22,18 @@ val NeonBlue = Color(0xFF0066FF)
 val ElectricViolet = Color(0xFF8B00FF)
 
 // Status Colors
-val SafeGreen = Color(0xFF00E676)
-val WarningOrange = Color(0xFFFF9100)
+val SafeGreen = Color(0xFF00FF9D)
+val WarningOrange = Color(0xFFFFCC00)
 val NeonOrange = WarningOrange
-val AlertRed = Color(0xFFFF1744)
-val CriticalMagenta = Color(0xFFFF0055)
+val AlertRed = Color(0xFFFF2D55)
+val CriticalMagenta = Color(0xFFFF00FF)
 
 // Background & Surface
-val DeepBlack = Color(0xFF0A0A0F)
-val DarkSurface = Color(0xFF12121A)
-val CardSurface = Color(0xFF1A1A25)
-val ElevatedSurface = Color(0xFF222233)
-val GlassSurface = Color(0x1AFFFFFF)
+val DeepBlack = Color(0xFF050505)
+val DarkSurface = Color(0xFF0E0E12)
+val CardSurface = Color(0xFF14141A)
+val ElevatedSurface = Color(0xFF1C1C26)
+val GlassSurface = Color(0x26FFFFFF)
 
 // Text Colors
 val TextPrimary = Color(0xFFEEEEFF)

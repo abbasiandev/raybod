@@ -12,3 +12,4 @@ class ThreatFeedback(Base):
     original_risk_level = Column(String)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
 
+

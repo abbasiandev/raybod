@@ -33,6 +33,16 @@ fun RadarVisualization(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "Radar")
 
+    // Slow background rotation for the entire radar
+    val baseRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing)
+        ),
+        label = "BaseRotation"
+    )
+
     // Main rotation for scanning beam
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -74,7 +84,7 @@ fun RadarVisualization(
 
     Box(
         modifier = modifier
-            .size(280.dp)
+            .size(240.dp)
             .aspectRatio(1f),
         contentAlignment = Alignment.Center
     ) {
@@ -86,15 +96,56 @@ fun RadarVisualization(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        phaseColor.copy(alpha = glowAlpha * 0.15f),
+                        phaseColor.copy(alpha = glowAlpha * 0.25f),
+                        phaseColor.copy(alpha = 0.08f),
                         Color.Transparent
                     ),
                     center = center,
-                    radius = radius * 1.3f
+                    radius = radius * 1.6f
                 ),
-                radius = radius * 1.3f,
+                radius = radius * 1.6f,
                 center = center
             )
+
+            // Outer ring border (high tech look)
+            drawCircle(
+                color = phaseColor.copy(alpha = 0.4f),
+                radius = radius + 4.dp.toPx(),
+                center = center,
+                style = Stroke(width = 1.dp.toPx())
+            )
+
+            // Grid lines (crosshairs) with base rotation
+            rotate(baseRotation, pivot = center) {
+                val lineAlpha = 0.25f
+                drawLine(
+                    color = phaseColor.copy(alpha = lineAlpha),
+                    start = Offset(center.x - radius, center.y),
+                    end = Offset(center.x + radius, center.y),
+                    strokeWidth = 1.dp.toPx()
+                )
+                drawLine(
+                    color = phaseColor.copy(alpha = lineAlpha),
+                    start = Offset(center.x, center.y - radius),
+                    end = Offset(center.x, center.y + radius),
+                    strokeWidth = 1.dp.toPx()
+                )
+
+                // Diagonal grid lines
+                val diagonalOffset = radius * 0.707f // cos(45°)
+                drawLine(
+                    color = phaseColor.copy(alpha = lineAlpha * 0.6f),
+                    start = Offset(center.x - diagonalOffset, center.y - diagonalOffset),
+                    end = Offset(center.x + diagonalOffset, center.y + diagonalOffset),
+                    strokeWidth = 0.5.dp.toPx()
+                )
+                drawLine(
+                    color = phaseColor.copy(alpha = lineAlpha * 0.6f),
+                    start = Offset(center.x + diagonalOffset, center.y - diagonalOffset),
+                    end = Offset(center.x - diagonalOffset, center.y + diagonalOffset),
+                    strokeWidth = 0.5.dp.toPx()
+                )
+            }
 
             // Concentric rings
             val ringCount = 4
@@ -109,36 +160,6 @@ fun RadarVisualization(
                     style = Stroke(width = 1.dp.toPx())
                 )
             }
-
-            // Grid lines (crosshairs)
-            val lineAlpha = 0.2f
-            drawLine(
-                color = phaseColor.copy(alpha = lineAlpha),
-                start = Offset(center.x - radius, center.y),
-                end = Offset(center.x + radius, center.y),
-                strokeWidth = 1.dp.toPx()
-            )
-            drawLine(
-                color = phaseColor.copy(alpha = lineAlpha),
-                start = Offset(center.x, center.y - radius),
-                end = Offset(center.x, center.y + radius),
-                strokeWidth = 1.dp.toPx()
-            )
-
-            // Diagonal grid lines
-            val diagonalOffset = radius * 0.707f // cos(45°)
-            drawLine(
-                color = phaseColor.copy(alpha = lineAlpha * 0.5f),
-                start = Offset(center.x - diagonalOffset, center.y - diagonalOffset),
-                end = Offset(center.x + diagonalOffset, center.y + diagonalOffset),
-                strokeWidth = 0.5.dp.toPx()
-            )
-            drawLine(
-                color = phaseColor.copy(alpha = lineAlpha * 0.5f),
-                start = Offset(center.x + diagonalOffset, center.y - diagonalOffset),
-                end = Offset(center.x - diagonalOffset, center.y + diagonalOffset),
-                strokeWidth = 0.5.dp.toPx()
-            )
 
             // Outer ring with glow
             drawCircle(
@@ -200,14 +221,14 @@ fun RadarVisualization(
                 )
             }
 
-            // Center dot
+            // Subtle center glow (replaces solid dot to avoid text overlap)
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(phaseColor, phaseColor.copy(alpha = 0.3f)),
+                    colors = listOf(phaseColor.copy(alpha = 0.2f), Color.Transparent),
                     center = center,
-                    radius = 12.dp.toPx()
+                    radius = 24.dp.toPx()
                 ),
-                radius = 8.dp.toPx(),
+                radius = 24.dp.toPx(),
                 center = center
             )
 
@@ -237,7 +258,8 @@ fun RadarVisualization(
 
         // Center Status Text
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(top = 24.dp) // Move text further down to avoid any dot overlap
         ) {
             Text(
                 text = when (scanPhase) {
@@ -246,23 +268,24 @@ fun RadarVisualization(
                     ScanPhase.ANALYZING -> "ANALYZING"
                     ScanPhase.VERDICT -> if (threatCount > 0) "THREATS" else "SECURE"
                 },
-                style = MaterialTheme.typography.labelMedium,
-                color = phaseColor,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.labelSmall,
+                color = phaseColor.copy(alpha = 0.9f),
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp
             )
             if (isScanning) {
                 Text(
                     text = "${(progress * 100).toInt()}%",
                     style = MaterialTheme.typography.headlineMedium,
                     color = TextPrimary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Black
                 )
             } else if (scanPhase == ScanPhase.VERDICT) {
                 Text(
                     text = if (threatCount > 0) "$threatCount" else "✓",
                     style = MaterialTheme.typography.headlineLarge,
                     color = phaseColor,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     fontSize = 32.sp
                 )
             }

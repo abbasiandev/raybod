@@ -6,12 +6,12 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
+import logging
 from app.core.config import settings
-print("DEBUG: Loading all routers...")
 from app.api.v1.endpoints import scan, auth, dashboard, allowlist, threats, reputation, devices, models, analytics, websocket, keys, public, billing, network
-print("DEBUG: Routers loaded successfully")
-
 from app.core.database import init_db
+
+logger = logging.getLogger(__name__)
 
 limiter = Limiter(key_func=get_remote_address, enabled=os.getenv("TESTING") != "1")
 app = FastAPI(
@@ -28,8 +28,16 @@ templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Initialize database unless explicitly disabled (e.g. in some test environments)
-if os.getenv("SKIP_INIT_DB") != "1":
-    init_db()
+# Use startup event to avoid blocking app startup if DB is temporarily unavailable
+@app.on_event("startup")
+def startup_event():
+    if os.getenv("SKIP_INIT_DB") != "1":
+        try:
+            init_db()
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.error(f"Database initialization failed: {e}")
+            # Don't crash the app - it will retry on first request
 
 # Include routers
 app.include_router(scan.router, prefix="/api/v1/scan", tags=["scan"])

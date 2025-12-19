@@ -63,12 +63,17 @@ class ScanViewModel @Inject constructor(
         scanJob = viewModelScope.launch {
             val plan = userPrefs.userPlan.first()
             val lastScan = userPrefs.lastScanTimestamp.first()
+            val scanCount = userPrefs.dailyScanCount.first()
             val currentTime = System.currentTimeMillis()
             
-            // Limit Freemium to once every 24 hours
-            if (plan == "FREEMIUM" && (currentTime - lastScan) < 24 * 60 * 60 * 1000) {
+            // Check if it's a new day (reset count)
+            val isNewDay = !isSameDay(lastScan, currentTime)
+            val currentDayCount = if (isNewDay) 0 else scanCount
+            
+            // Limit Freemium to 3 scans per day
+            if (plan == "FREEMIUM" && currentDayCount >= 3) {
                 _uiState.value = _uiState.value.copy(
-                    error = "Freemium plan limited to one scan per 24h. Upgrade to Featured for unlimited scans!"
+                    error = "Daily scan limit reached (3/3). Upgrade to Premium for unlimited protection!"
                 )
                 return@launch
             }
@@ -130,9 +135,19 @@ class ScanViewModel @Inject constructor(
                     currentApp = "Scan Complete",
                     results = sortedResults
                 )
-                userPrefs.setLastScanTimestamp(System.currentTimeMillis())
+                
+                val newTimestamp = System.currentTimeMillis()
+                userPrefs.setLastScanTimestamp(newTimestamp)
+                userPrefs.setDailyScanCount(if (isSameDay(lastScan, newTimestamp)) currentDayCount + 1 else 1)
             }
         }
+    }
+
+    private fun isSameDay(t1: Long, t2: Long): Boolean {
+        val cal1 = java.util.Calendar.getInstance().apply { timeInMillis = t1 }
+        val cal2 = java.util.Calendar.getInstance().apply { timeInMillis = t2 }
+        return cal1.get(java.util.Calendar.YEAR) == cal2.get(java.util.Calendar.YEAR) &&
+               cal1.get(java.util.Calendar.DAY_OF_YEAR) == cal2.get(java.util.Calendar.DAY_OF_YEAR)
     }
     
     fun stopScan() {

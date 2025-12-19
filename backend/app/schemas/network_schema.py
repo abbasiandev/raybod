@@ -32,3 +32,4 @@ class NetworkAnalysisResult(BaseModel):
     alerts: List[NetworkAlert]
     blocklist: List[BlocklistEntry]
 
+

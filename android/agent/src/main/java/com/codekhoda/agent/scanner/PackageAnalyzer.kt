@@ -68,8 +68,49 @@ class PackageAnalyzer(private val context: Context) {
             serviceCount = pkg.services?.size ?: 0,
             receiverCount = pkg.receivers?.size ?: 0,
             hasReflection = hasReflection,
-            hasDynamicLoading = hasDynamicLoading
+            hasDynamicLoading = hasDynamicLoading,
+            
+            // Phase B: Enhanced Metadata
+            appLabel = getAppLabel(pkg),
+            category = getAppCategory(pkg),
+            installedSize = getInstalledSize(pkg),
+            targetSdkVersion = pkg.applicationInfo.targetSdkVersion,
+            minSdkVersion = if (android.os.Build.VERSION.SDK_INT >= 24) pkg.applicationInfo.minSdkVersion else 0
         )
+    }
+
+    private fun getAppLabel(pkg: PackageInfo): String {
+        return try {
+            pkg.applicationInfo.loadLabel(context.packageManager).toString()
+        } catch (e: Exception) {
+            pkg.packageName
+        }
+    }
+
+    private fun getAppCategory(pkg: PackageInfo): String {
+        return if (android.os.Build.VERSION.SDK_INT >= 26) {
+            when (pkg.applicationInfo.category) {
+                android.content.pm.ApplicationInfo.CATEGORY_GAME -> "Game"
+                android.content.pm.ApplicationInfo.CATEGORY_AUDIO -> "Audio"
+                android.content.pm.ApplicationInfo.CATEGORY_VIDEO -> "Video"
+                android.content.pm.ApplicationInfo.CATEGORY_IMAGE -> "Photo"
+                android.content.pm.ApplicationInfo.CATEGORY_SOCIAL -> "Social"
+                android.content.pm.ApplicationInfo.CATEGORY_NEWS -> "News"
+                android.content.pm.ApplicationInfo.CATEGORY_MAPS -> "Navigation"
+                android.content.pm.ApplicationInfo.CATEGORY_PRODUCTIVITY -> "Productivity"
+                else -> ""
+            }
+        } else {
+            ""
+        }
+    }
+
+    private fun getInstalledSize(pkg: PackageInfo): Long {
+        return try {
+            java.io.File(pkg.applicationInfo.sourceDir).length()
+        } catch (e: Exception) {
+            0L
+        }
     }
 
     private fun analyzeSuspiciousApis(pkg: PackageInfo): Pair<Boolean, Boolean> {

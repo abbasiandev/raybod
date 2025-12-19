@@ -1,133 +1,178 @@
 package com.codekhoda.presentation.about
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.codekhoda.presentation.theme.NeonCyan
-import com.codekhoda.presentation.theme.TextSecondary
+import androidx.compose.ui.unit.sp
+import com.codekhoda.presentation.components.*
+import com.codekhoda.presentation.theme.*
 
 @Composable
 fun AboutScreen() {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(DeepBlack)
     ) {
-        Spacer(Modifier.height(40.dp))
-        Text(
-            text = "HYBRID CLOUD SENTINEL",
-            style = MaterialTheme.typography.headlineLarge,
-            color = NeonCyan,
-            textAlign = TextAlign.Center
+        // Decorative background
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(NeonCyan.copy(alpha = 0.05f), DeepBlack)
+                    )
+                )
         )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = "Version 1.0.0-BETA",
-            style = MaterialTheme.typography.labelLarge,
-            color = TextSecondary
-        )
-        Spacer(Modifier.height(32.dp))
-        Text(
-            text = "Project Sentinel is an advanced AI-powered security assistant designed to protect your device from emerging threats using a hybrid approach: on-device TFLite inference and cloud-based deep analysis.",
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(Modifier.height(32.dp))
-        
-        // Hybrid Architecture Section
-        Text(
-            text = "Hybrid Architecture:",
-            style = MaterialTheme.typography.titleMedium,
-            color = NeonCyan
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Our lightweight on-device agent combines the best of both worlds:",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = TextSecondary
-        )
-        Spacer(Modifier.height(16.dp))
-        
-        BulletPoint("📱 On-Device ML: TensorFlow Lite models run locally for instant threat detection")
-        BulletPoint("☁️ Cloud Analysis: Deep neural networks analyze complex patterns in the cloud")
-        BulletPoint("⚡ Lightweight Agent: Minimal battery and performance impact")
-        BulletPoint("🔋 Optimized: Smart resource management for all device types")
-        
-        Spacer(Modifier.height(32.dp))
-        Text(
-            text = "Key Features:",
-            style = MaterialTheme.typography.titleMedium,
-            color = NeonCyan
-        )
-        Spacer(Modifier.height(8.dp))
-        BulletPoint("Real-time App Scanning")
-        BulletPoint("AI-Powered Malware Detection")
-        BulletPoint("Cloud Brain Threat Analysis")
-        BulletPoint("Heuristic Explainability")
-        BulletPoint("Low Speed Mode for Battery Saving")
-        
-        Spacer(Modifier.height(32.dp))
-        Text(
-            text = "Performance Metrics:",
-            style = MaterialTheme.typography.titleMedium,
-            color = NeonCyan
-        )
-        Spacer(Modifier.height(8.dp))
-        MetricItem("Battery Impact", "<2% during scanning")
-        MetricItem("Memory Footprint", "~15MB RAM usage")
-        MetricItem("Scan Speed", "~100 apps/minute")
-        MetricItem("Model Size", "4.8MB TFLite model")
-        
-        Spacer(Modifier.height(48.dp))
-        Text(
-            text = "Developed by CodeKhoda team",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
-        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(40.dp))
+            
+            Text(
+                text = "HYBRID CLOUD SENTINEL",
+                style = MaterialTheme.typography.headlineSmall,
+                color = NeonCyan,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center,
+                letterSpacing = 2.sp
+            )
+            
+            Spacer(Modifier.height(8.dp))
+            
+            Text(
+                text = "SYSTEM VERSION 1.0.0-BETA",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextSecondary,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(Modifier.height(32.dp))
+            
+            StatusCard(
+                status = CardStatus.NEUTRAL,
+                modifier = Modifier.fillMaxWidth(),
+                animated = false
+            ) {
+                Text(
+                    text = "Project Sentinel is an advanced AI-powered security assistant designed to protect your device from emerging threats using a hybrid approach: on-device TFLite inference and cloud-based deep analysis.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(24.dp),
+                    lineHeight = 22.sp
+                )
+            }
+            
+            Spacer(Modifier.height(32.dp))
+            
+            Text(
+                text = "HYBRID ARCHITECTURE",
+                style = MaterialTheme.typography.labelLarge,
+                color = NeonCyan,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            
+            Spacer(Modifier.height(16.dp))
+            
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                BulletPointItem("📱 ON-DEVICE ML: TensorFlow Lite models run locally for instant threat detection")
+                BulletPointItem("☁️ CLOUD ANALYSIS: Deep neural networks analyze complex patterns in the cloud")
+                BulletPointItem("⚡ LIGHTWEIGHT AGENT: Minimal battery and performance impact")
+                BulletPointItem("🔋 OPTIMIZED: Smart resource management for all device types")
+            }
+            
+            Spacer(Modifier.height(32.dp))
+            
+            Text(
+                text = "PERFORMANCE METRICS",
+                style = MaterialTheme.typography.labelLarge,
+                color = NeonCyan,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            
+            Spacer(Modifier.height(16.dp))
+            
+            StatusCard(
+                status = CardStatus.SAFE,
+                modifier = Modifier.fillMaxWidth(),
+                animated = false
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    MetricItem("Battery Impact", "< 2%")
+                    Divider(modifier = Modifier.padding(vertical = 8.dp), color = SafeGreen.copy(alpha = 0.1f))
+                    MetricItem("Memory Footprint", "~ 15MB")
+                    Divider(modifier = Modifier.padding(vertical = 8.dp), color = SafeGreen.copy(alpha = 0.1f))
+                    MetricItem("Scan Speed", "~ 100 apps/min")
+                }
+            }
+            
+            Spacer(Modifier.height(48.dp))
+            
+            Text(
+                text = "DEVELOPED BY CODEKHODA TEAM",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted,
+                fontWeight = FontWeight.Medium
+            )
+            
+            Spacer(Modifier.height(16.dp))
+        }
     }
 }
 
 @Composable
 fun MetricItem(label: String, value: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary,
+            fontWeight = FontWeight.Bold
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = NeonCyan,
+            style = MaterialTheme.typography.bodyLarge,
+            color = SafeGreen,
+            fontWeight = FontWeight.ExtraBold,
             textAlign = TextAlign.End
         )
     }
 }
 
 @Composable
-fun BulletPoint(text: String) {
+fun BulletPointItem(text: String) {
     Row(
         modifier = Modifier.padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
     ) {
-        Text(text = "•", color = NeonCyan, modifier = Modifier.padding(end = 8.dp))
-        Text(text = text, style = MaterialTheme.typography.bodyMedium)
+        Text(text = "▶", color = NeonCyan, fontSize = 10.sp, modifier = Modifier.padding(end = 12.dp, top = 4.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextPrimary,
+            lineHeight = 20.sp
+        )
     }
 }

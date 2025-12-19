@@ -13,11 +13,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.codekhoda.domain.model.RiskAssessment
@@ -26,6 +28,7 @@ import com.codekhoda.presentation.permissions.PermissionViewModel
 import com.codekhoda.presentation.components.*
 import com.codekhoda.presentation.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanScreen(
     viewModel: ScanViewModel = hiltViewModel(),
@@ -40,6 +43,9 @@ fun ScanScreen(
     var selectedAssessment by remember { mutableStateOf<RiskAssessment?>(null) }
     var showLowSpeedInfo by remember { mutableStateOf(false) }
     var showUpgradePrompt by remember { mutableStateOf(false) }
+    var showResultsSheet by remember { mutableStateOf(false) }
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Box(
         modifier = Modifier
@@ -53,7 +59,7 @@ fun ScanScreen(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            NeonPurple.copy(alpha = 0.15f),
+                            NeonPurple.copy(alpha = 0.1f),
                             DeepBlack
                         ),
                         radius = 800f
@@ -61,144 +67,158 @@ fun ScanScreen(
                 )
         )
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
         ) {
-            // Header
-            Text(
-                text = "HYBRID SENTINEL",
-                style = MaterialTheme.typography.headlineMedium,
-                color = NeonCyan,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(2f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Radar Visualization
+            item {
+                // Radar Visualization - More compact
                 RadarVisualization(
+                    modifier = Modifier.size(220.dp),
                     isScanning = state.isScanning,
                     progress = state.progress,
                     scanPhase = determineScanPhase(state),
                     threatCount = state.results.count { it.riskLevel == RiskLevel.HIGH || it.riskLevel == RiskLevel.CRITICAL }
                 )
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
+            item { Spacer(modifier = Modifier.height(16.dp)) }
 
-                // Integrity Nudge
-                if (!state.isScanning) {
-                    if (state.isRooted) {
-                        SecurityNudgeBanner(
-                            text = "Device is ROOTED. Integrity compromised.",
-                            onClick = {},
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
-                    if (state.isEmulator) {
-                        SecurityNudgeBanner(
-                            text = "Running on EMULATOR. Performance may be degraded.",
-                            onClick = {},
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
-                }
-
-                // Encouragement Loop: Nudge if vulnerable
-                if (!state.isScanning && vulnerablePermission != null) {
-                    SecurityNudgeBanner(
-                        text = "Enable ${vulnerablePermission.name} for better protection.",
-                        onClick = onNavigateToSecurity,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                }
-
+            item {
                 // Action Area
                 if (!state.isScanning) {
-                    // Low Speed Mode Toggle with Info Icon
-                    Row(
-                        modifier = Modifier.fillMaxWidth(0.8f),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = state.isLowSpeedMode,
-                            onCheckedChange = { viewModel.toggleLowSpeedMode() },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = NeonCyan,
-                                uncheckedColor = TextSecondary
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Low Speed Scan",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        IconButton(
-                            onClick = { showLowSpeedInfo = true },
-                            modifier = Modifier.size(24.dp)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        // Low Speed Mode Toggle
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "Low Speed Info",
-                                tint = NeonCyan.copy(alpha = 0.7f),
-                                modifier = Modifier.size(16.dp)
+                            Switch(
+                                checked = state.isLowSpeedMode,
+                                onCheckedChange = { viewModel.toggleLowSpeedMode() },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = NeonCyan,
+                                    checkedTrackColor = NeonCyan.copy(alpha = 0.5f),
+                                    uncheckedThumbColor = TextSecondary,
+                                    uncheckedTrackColor = DarkSurface
+                                ),
+                                modifier = Modifier.scale(0.7f)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Low Speed",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                            IconButton(
+                                onClick = { showLowSpeedInfo = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "Info",
+                                    tint = NeonCyan.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(12.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        CyberButton(
+                            text = if (state.results.isEmpty()) "INITIATE SYSTEM SCAN" else "RESCAN SYSTEM",
+                            onClick = { viewModel.startScan(state.isLowSpeedMode) },
+                            variant = ButtonVariant.PRIMARY,
+                            modifier = Modifier.fillMaxWidth(0.85f),
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                        )
+                        
+                        if (state.results.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            CyberButton(
+                                text = "VIEW SCAN RESULTS",
+                                onClick = { showResultsSheet = true },
+                                variant = ButtonVariant.GRADIENT,
+                                modifier = Modifier.fillMaxWidth(0.85f),
+                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    CyberButton(
-                        text = if (state.results.isEmpty()) "INITIATE SYSTEM SCAN" else "RESCAN SYSTEM",
-                        onClick = { viewModel.startScan(state.isLowSpeedMode) },
-                        variant = ButtonVariant.PRIMARY,
-                        modifier = Modifier.fillMaxWidth(0.8f)
-                    )
                 } else {
-                    ScanningStatus(state.currentApp)
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    CyberButton(
-                        text = "STOP SCAN",
-                        onClick = { viewModel.stopScan() },
-                        variant = ButtonVariant.SECONDARY,
-                        modifier = Modifier.fillMaxWidth(0.8f)
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        ScanningStatus(state.currentApp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        CyberButton(
+                            text = "STOP SCAN",
+                            onClick = { viewModel.stopScan() },
+                            variant = ButtonVariant.SECONDARY,
+                            modifier = Modifier.fillMaxWidth(0.85f),
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                        )
+                    }
                 }
             }
 
-            if (state.results.isNotEmpty()) {
+            item { Spacer(modifier = Modifier.height(24.dp)) }
+
+            // Integrity Nudges
+            if (!state.isScanning) {
+                if (state.isRooted) {
+                    item {
+                        SecurityNudgeBanner(
+                            text = "Device is ROOTED. Integrity compromised.",
+                            onClick = {},
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                    }
+                }
+                if (vulnerablePermission != null) {
+                    item {
+                        SecurityNudgeBanner(
+                            text = "Enable ${vulnerablePermission.name} for protection.",
+                            onClick = onNavigateToSecurity,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Results Bottom Sheet
+        if (showResultsSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showResultsSheet = false },
+                sheetState = sheetState,
+                containerColor = DarkSurface,
+                scrimColor = Color.Black.copy(alpha = 0.7f)
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .padding(16.dp)
                 ) {
-                    Text(
-                        text = "SCAN RESULTS",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = TextSecondary,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "SCAN RESULTS",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = NeonCyan,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 2.sp
+                        )
+                        IconButton(onClick = { showResultsSheet = false }) {
+                            Icon(Icons.Default.Star, contentDescription = "Close", tint = TextSecondary)
+                        }
+                    }
 
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp)
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(
                             items = state.results,
@@ -206,10 +226,13 @@ fun ScanScreen(
                         ) { result ->
                             ResultItemCard(
                                 result = result,
-                                onClick = { selectedAssessment = result }
+                                onClick = { 
+                                    selectedAssessment = result
+                                }
                             )
                         }
                     }
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }

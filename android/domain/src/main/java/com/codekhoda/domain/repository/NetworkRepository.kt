@@ -12,3 +12,4 @@ interface NetworkRepository {
     suspend fun syncBlocklist()
 }
 
+

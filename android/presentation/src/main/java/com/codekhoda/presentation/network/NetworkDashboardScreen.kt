@@ -50,28 +50,19 @@ fun NetworkDashboardScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text(
-                text = "NETWORK SHIELD",
-                style = MaterialTheme.typography.headlineMedium,
-                color = NeonCyan,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-
             // Stats Summary
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 StatCard(
-                    title = "Active Flows",
+                    title = "Active Connections",
                     value = activeFlows.size.toString(),
                     color = NeonCyan,
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
-                    title = "Threats Blocked",
+                    title = "Threats Neutralized",
                     value = alerts.size.toString(),
                     color = NeonPink,
                     modifier = Modifier.weight(1f)

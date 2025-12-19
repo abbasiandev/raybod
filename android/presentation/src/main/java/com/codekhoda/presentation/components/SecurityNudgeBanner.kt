@@ -15,8 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.codekhoda.presentation.theme.NeonCyan
-import com.codekhoda.presentation.theme.NeonOrange
+import com.codekhoda.presentation.theme.*
 
 @Composable
 fun SecurityNudgeBanner(
@@ -24,35 +23,43 @@ fun SecurityNudgeBanner(
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(NeonOrange.copy(alpha = 0.1f))
-            .clickable(onClick = onClick)
-            .padding(16.dp)
+    StatusCard(
+        status = CardStatus.WARNING,
+        modifier = modifier.fillMaxWidth(),
+        animated = true
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp).fillMaxWidth()
+        ) {
             Icon(
                 imageVector = Icons.Default.Warning,
                 contentDescription = null,
-                tint = NeonOrange,
+                tint = WarningOrange,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Boost Security Score",
-                    color = NeonOrange,
+                    color = WarningOrange,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = text,
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = TextPrimary.copy(alpha = 0.8f),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+            Spacer(modifier = Modifier.width(8.dp))
+            CyberButton(
+                text = "FIX",
+                onClick = onClick,
+                variant = ButtonVariant.PRIMARY,
+                glowColor = WarningOrange,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            )
         }
     }
 }

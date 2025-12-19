@@ -15,3 +15,4 @@ data class NetworkAlertEntity(
     val timestamp: Long
 )
 
+

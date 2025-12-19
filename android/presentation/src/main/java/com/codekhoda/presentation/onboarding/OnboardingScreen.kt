@@ -172,7 +172,7 @@ private fun OnboardingPage3() {
         description = "Start with powerful free features, upgrade anytime for real-time cloud analysis and zero-day threat protection.",
         features = listOf(
             "✅ Free on-device ML scanning",
-            "✅ Manual scans (once daily)",
+            "✅ Manual scans (3 daily)",
             "⭐ Premium: Unlimited scans",
             "⭐ Premium: Real-time protection"
         )

@@ -18,3 +18,4 @@ async def analyze_network(request: NetworkAnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+

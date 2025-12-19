@@ -28,6 +28,9 @@ class UserPreferencesRepositoryImpl @Inject constructor(
     private val _lastScanTimestamp = MutableStateFlow(sharedPrefs.getLong(Keys.LAST_SCAN_TIMESTAMP, 0L))
     override val lastScanTimestamp: Flow<Long> = _lastScanTimestamp.asStateFlow()
 
+    private val _dailyScanCount = MutableStateFlow(sharedPrefs.getInt(Keys.DAILY_SCAN_COUNT, 0))
+    override val dailyScanCount: Flow<Int> = _dailyScanCount.asStateFlow()
+
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         sharedPrefs.edit().putBoolean(Keys.ONBOARDING_COMPLETED, completed).apply()
         _onboardingCompleted.value = completed
@@ -48,10 +51,16 @@ class UserPreferencesRepositoryImpl @Inject constructor(
         _lastScanTimestamp.value = timestamp
     }
 
+    override suspend fun setDailyScanCount(count: Int) {
+        sharedPrefs.edit().putInt(Keys.DAILY_SCAN_COUNT, count).apply()
+        _dailyScanCount.value = count
+    }
+
     private object Keys {
         const val ONBOARDING_COMPLETED = "onboarding_completed"
         const val ANALYTICS_ENABLED = "analytics_enabled"
         const val USER_PLAN = "user_plan"
         const val LAST_SCAN_TIMESTAMP = "last_scan_timestamp"
+        const val DAILY_SCAN_COUNT = "daily_scan_count"
     }
 }
