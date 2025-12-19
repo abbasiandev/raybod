@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -16,6 +17,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.codekhoda.presentation.theme.DeepBlack
 import com.codekhoda.presentation.theme.NeonCyan
+import com.codekhoda.presentation.theme.NeonPink
 import com.codekhoda.presentation.theme.TextPrimary
 import kotlinx.coroutines.launch
 
@@ -26,6 +28,7 @@ fun MainLayout(
     onNavigateToScan: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToSecurity: () -> Unit,
+    onNavigateToPremium: () -> Unit,
     onExit: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -76,6 +79,22 @@ fun MainLayout(
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                     colors = NavigationDrawerItemDefaults.colors(
                         unselectedContainerColor = Color.Transparent
+                    )
+                )
+                Divider(Modifier.padding(vertical = 8.dp), color = NeonCyan.copy(alpha = 0.2f))
+                NavigationDrawerItem(
+                    label = { Text("Upgrade to Premium") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onNavigateToPremium()
+                    },
+                    icon = { Icon(Icons.Default.Star, contentDescription = null, tint = NeonPink) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                    colors = NavigationDrawerItemDefaults.colors(
+                        unselectedContainerColor = Color.Transparent,
+                        unselectedTextColor = NeonPink,
+                        unselectedIconColor = NeonPink
                     )
                 )
                 Divider(Modifier.padding(vertical = 8.dp), color = NeonCyan.copy(alpha = 0.2f))

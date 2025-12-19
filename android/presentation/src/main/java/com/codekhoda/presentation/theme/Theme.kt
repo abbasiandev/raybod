@@ -24,6 +24,7 @@ val ElectricViolet = Color(0xFF8B00FF)
 // Status Colors
 val SafeGreen = Color(0xFF00E676)
 val WarningOrange = Color(0xFFFF9100)
+val NeonOrange = WarningOrange
 val AlertRed = Color(0xFFFF1744)
 val CriticalMagenta = Color(0xFFFF0055)
 
