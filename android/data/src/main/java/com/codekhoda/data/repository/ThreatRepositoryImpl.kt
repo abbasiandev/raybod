@@ -17,6 +17,29 @@ class ThreatRepositoryImpl @Inject constructor(
 
     override suspend fun scanApp(appPackage: AppPackage, lowSpeedMode: Boolean): RiskAssessment {
 
+        // 0. Fast Cloud Allowlist Check (Category 5.1 Optimization)
+        if (!lowSpeedMode) {
+            try {
+                val allowlistCheck = api.checkAllowlist(appPackage.packageName)
+                if (allowlistCheck.isAllowed) {
+                    val safeResult = RiskAssessment(
+                        packageName = appPackage.packageName,
+                        riskLevel = RiskLevel.SAFE,
+                        description = "Verified Safe via Global Cloud Allowlist",
+                        heuristicsUsed = listOf("Cloud: Global Allowlist")
+                    )
+                    riskDao.insertRisk(safeResult.toEntity(
+                        syncStatus = com.codekhoda.data.local.entity.SyncStatus.SYNCED,
+                        appVersion = appPackage.versionCode,
+                        lastUpdateTime = appPackage.lastUpdateTime
+                    ))
+                    return safeResult
+                }
+            } catch (e: Exception) {
+                // Fail silent and continue to local scan
+            }
+        }
+
         // 1. Check local cache & Differential Scanning (Category 5.2)
         val cached = riskDao.getRisk(appPackage.packageName)
         if (cached != null && cached.lastUpdateTime == appPackage.lastUpdateTime) {
@@ -60,7 +83,12 @@ class ThreatRepositoryImpl @Inject constructor(
                 versionCode = appPackage.versionCode,
                 signature = appPackage.signature,
                 permissions = appPackage.permissions,
-                ensembleMetadata = localResult.ensembleMetadata
+                ensembleMetadata = localResult.ensembleMetadata,
+                // NEW: Send additional metadata
+                intents = appPackage.intents,
+                versionName = appPackage.versionName,
+                installTime = appPackage.installTime,
+                lastUpdateTime = appPackage.lastUpdateTime
             )
             val response = api.analyzeApp(dto)
             
@@ -98,6 +126,44 @@ class ThreatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun scanApps(appPackages: List<AppPackage>): List<RiskAssessment> {
+        // Optimization: For large sets, use batch API (Category 5.1)
+        if (appPackages.size > 5) {
+            try {
+                val dtos = appPackages.map { pkg ->
+                    com.codekhoda.data.remote.dto.AppMetadataDto(
+                        packageName = pkg.packageName,
+                        versionCode = pkg.versionCode,
+                        signature = pkg.signature,
+                        permissions = pkg.permissions,
+                        intents = pkg.intents,
+                        versionName = pkg.versionName,
+                        installTime = pkg.installTime,
+                        lastUpdateTime = pkg.lastUpdateTime
+                    )
+                }
+                val response = api.batchScan(com.codekhoda.data.remote.dto.BatchScanRequestDto(dtos))
+                
+                return response.results.map { res ->
+                    val assessment = RiskAssessment(
+                        packageName = res.packageName,
+                        riskLevel = try { RiskLevel.valueOf(res.riskLevel) } catch (e: Exception) { RiskLevel.UNKNOWN },
+                        threatType = res.threatType,
+                        description = res.description,
+                        heuristicsUsed = res.heuristicsUsed
+                    )
+                    // Cache results
+                    riskDao.insertRisk(assessment.toEntity(
+                        syncStatus = com.codekhoda.data.local.entity.SyncStatus.SYNCED,
+                        appVersion = 0, // In batch we might not have versions easily available for all
+                        lastUpdateTime = 0
+                    ))
+                    assessment
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Fallback to sequential scanning if batch fails
+            }
+        }
         return appPackages.map { scanApp(it) }
     }
 }

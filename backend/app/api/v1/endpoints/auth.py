@@ -9,6 +9,7 @@ from typing import Optional
 
 from app.core.database import get_db
 from app.models.user import User
+from app.core.audit import log_audit_event
 from app.services.auth import (
     hash_password,
     verify_password,
@@ -46,6 +47,7 @@ class MessageResponse(BaseModel):
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
+    request: Request,
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
@@ -82,6 +84,16 @@ async def login(
         user_id=user.id,
         username=user.username,
         role=user.role.name
+    )
+    
+    # Log audit event
+    log_audit_event(
+        db=db,
+        request=request,
+        user_id=user.id,
+        action="login",
+        resource_type="auth",
+        details={"username": user.username}
     )
     
     # Set HTTP-only cookie for browser clients

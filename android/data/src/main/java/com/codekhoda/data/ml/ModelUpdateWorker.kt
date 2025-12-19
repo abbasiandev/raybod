@@ -1,0 +1,66 @@
+package com.codekhoda.data.ml
+
+import android.content.Context
+import android.util.Log
+import androidx.hilt.work.HiltWorker
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import java.io.File
+import java.io.FileOutputStream
+
+@HiltWorker
+class ModelUpdateWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val modelUpdateService: ModelUpdateService,
+    private val malwareScanner: MalwareScanner
+) : CoroutineWorker(context, workerParams) {
+
+    override suspend fun doWork(): Result {
+        Log.d("ModelUpdateWorker", "Starting background model sync...")
+        
+        val sharedPrefs = applicationContext.getSharedPreferences("sentinel_prefs", Context.MODE_PRIVATE)
+        val currentVersion = sharedPrefs.getString("model_version", "1.0.0") ?: "1.0.0"
+        
+        try {
+            val modelInfo = modelUpdateService.getCurrentModelInfo()
+            if (modelInfo == null) {
+                Log.e("ModelUpdateWorker", "Failed to fetch model info from cloud")
+                return Result.retry()
+            }
+            
+            if (modelInfo.version == currentVersion) {
+                Log.d("ModelUpdateWorker", "Model is up to date: $currentVersion")
+                return Result.success()
+            }
+            
+            Log.d("ModelUpdateWorker", "New model version found: ${modelInfo.version}. Downloading...")
+            
+            val modelBytes = modelUpdateService.downloadModel(modelInfo.version)
+            if (modelBytes == null) {
+                Log.e("ModelUpdateWorker", "Failed to download model bytes")
+                return Result.retry()
+            }
+            
+            // Save model to internal storage
+            val modelFile = File(applicationContext.filesDir, "updated_model.tflite")
+            FileOutputStream(modelFile).use { it.write(modelBytes) }
+            
+            // Update version in prefs
+            sharedPrefs.edit().putString("model_version", modelInfo.version).apply()
+            
+            // Reload scanner with new model
+            malwareScanner.reloadModel()
+            
+            Log.d("ModelUpdateWorker", "Successfully updated model to ${modelInfo.version}")
+            return Result.success()
+            
+        } catch (e: Exception) {
+            Log.e("ModelUpdateWorker", "Error during model update: ${e.message}")
+            return Result.retry()
+        }
+    }
+}
+

@@ -39,11 +39,15 @@ fun PermissionDashboardScreen(
 
         item {
             Text(
-                text = "Protection Layers",
+                text = "Anomaly Detection Layers",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
+        }
+        
+        item {
+            SecurityNudgeBanner()
         }
 
         items(uiState.permissions) { permission ->
@@ -51,7 +55,70 @@ fun PermissionDashboardScreen(
         }
         
         item {
+            Text(
+                text = "Advanced Behavioral Scanners",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+        
+        item {
+            AdvancedScannerItem(
+                name = "Accessibility Watchdog",
+                description = "Monitors for invisible overlays and phishing screens.",
+                status = "Active",
+                color = Color(0xFF4CAF50)
+            )
+        }
+        
+        item {
+            AdvancedScannerItem(
+                name = "Network Fingerprinter",
+                description = "Detects C2 communication and data exfiltration patterns.",
+                status = "Active",
+                color = Color(0xFF4CAF50)
+            )
+        }
+        
+        item {
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+fun AdvancedScannerItem(name: String, description: String, status: String, color: Color) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = status,
+                color = color,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

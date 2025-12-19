@@ -34,6 +34,9 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.tensorflow.lite) // Local ML
+    implementation(libs.androidx.work.runtime.ktx) // WorkManager
+    implementation(libs.hilt.work)
+    kapt(libs.hilt.work.compiler)
     kapt(libs.androidx.room.compiler)
     
     // Retrofit

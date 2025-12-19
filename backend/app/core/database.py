@@ -40,14 +40,21 @@ def get_db():
         db.close()
 
 
-def init_db():
+def init_db(seed=True):
     """Initialize database and seed default data."""
     # Import models to ensure tables are created
     from app.models.user import User, Role
     from app.models.scan_log import ScanLog
+    from app.models.device import Device
+    from app.models.model_version import ModelVersion
+    from app.models.audit_log import AuditLog
+    from app.models.api_key import ApiKey
     
     Base.metadata.create_all(bind=engine)
     
+    if not seed:
+        return
+
     db = SessionLocal()
     try:
         # Seed allowlist if empty

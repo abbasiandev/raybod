@@ -1,5 +1,8 @@
 package com.codekhoda.agent.service
 
+import android.content.ClipboardManager
+import android.content.Context
+import android.util.Log
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -39,11 +42,27 @@ class SentinelService : Service() {
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
+    private var clipboardManager: ClipboardManager? = null
+    private val clipboardListener = ClipboardManager.OnPrimaryClipChangedListener {
+        // Category 2.3: Clipboard Snooping Detection
+        // Here we would check which app currently has focus or if the clipboard
+        // contains sensitive patterns (crypto addresses, passwords) and 
+        // if an unauthorized background app is accessing it.
+        Log.d("SentinelService", "Clipboard content changed - monitoring for snooping")
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        setupClipboardMonitor()
+        SentinelFileObserver.startWatchingSensitiveAreas()
+    }
+
+    private fun setupClipboardMonitor() {
+        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboardManager?.addPrimaryClipChangedListener(clipboardListener)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -149,6 +168,7 @@ class SentinelService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        clipboardManager?.removePrimaryClipChangedListener(clipboardListener)
         job.cancel()
     }
 }

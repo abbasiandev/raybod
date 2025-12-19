@@ -20,8 +20,8 @@ import com.codekhoda.presentation.theme.NeonOrange
 
 @Composable
 fun SecurityNudgeBanner(
-    text: String,
-    onClick: () -> Unit,
+    text: String = "Complete permission onboarding to enable real-time anomaly detection.",
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(

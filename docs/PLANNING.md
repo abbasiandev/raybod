@@ -133,6 +133,13 @@ Scaling to organizational deployments.
 - [ ] **Policy Engine**: Configurable scan policies and response actions.
 - [ ] **Compliance Reporting**: SOC2, GDPR, and HIPAA audit trails.
 
+### Phase 9: Commercialization & Plans (In Progress)
+Implementing the business model with a sandbox payment system.
+- [ ] **Subscription Backend**: Plans, Subscriptions, and Payment models.
+- [ ] **Sandbox Gateway**: Debuggable payment page (Success/Fail).
+- [ ] **Web Landing Page**: High-conversion "Real Security" homepage + Pricing.
+- [ ] **Android Feature Gating**: Lock Premium features (Forensics, Real-time).
+
 ---
 
 ## 4.0 Technical Debt & Known Limitations

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Hybrid Cloud Sentinel</string>
+    <string name="accessibility_description">Sentinel uses accessibility to monitor for invisible phishing overlays and protect your sensitive data from UI hijacking attacks.</string>
 </resources>

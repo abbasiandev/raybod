@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 fun OnboardingScreen(
     onComplete: () -> Unit
 ) {
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    val pagerState = rememberPagerState(pageCount = { 4 })
     val scope = rememberCoroutineScope()
 
     Box(
@@ -57,7 +57,7 @@ fun OnboardingScreen(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                repeat(3) { index ->
+                repeat(4) { index ->
                     Box(
                         modifier = Modifier
                             .padding(4.dp)
@@ -81,13 +81,14 @@ fun OnboardingScreen(
                     0 -> OnboardingPage1()
                     1 -> OnboardingPage2()
                     2 -> OnboardingPage3()
+                    3 -> OnboardingPagePermissions()
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
             // Navigation Buttons
-            if (pagerState.currentPage < 2) {
+            if (pagerState.currentPage < 3) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -174,6 +175,23 @@ private fun OnboardingPage3() {
             "✅ Manual scans (once daily)",
             "⭐ Premium: Unlimited scans",
             "⭐ Premium: Real-time protection"
+        )
+    )
+}
+
+@Composable
+private fun OnboardingPagePermissions() {
+    OnboardingPageContent(
+        icon = Icons.Default.CheckCircle,
+        iconColor = NeonCyan,
+        title = "TRUST-FIRST SECURITY",
+        subtitle = "Empower Your Protection",
+        description = "To provide maximum security, Sentinel needs specific permissions to monitor for advanced threats like overlay attacks and spyware.",
+        features = listOf(
+            "🛡️ Accessibility: Detects invisible phishing overlays",
+            "🌐 Network: Fingerprints suspicious traffic patterns",
+            "📱 Packages: Scans all installed apps for hidden risks",
+            "⚡ Real-time: Continuous background protection"
         )
     )
 }

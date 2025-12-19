@@ -59,6 +59,30 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Category 2.2: Accessibility Abuse Monitoring -->
+        <service
+            android:name="com.codekhoda.agent.service.SentinelAccessibilityService"
+            android:label="Sentinel Advanced Protection"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.view.accessibility.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.accessibility.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- Category 2.1: Network Traffic Fingerprinting -->
+        <service
+            android:name="com.codekhoda.agent.service.SentinelVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
             
     </application>
 
