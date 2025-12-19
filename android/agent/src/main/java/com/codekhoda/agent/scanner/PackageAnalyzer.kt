@@ -3,6 +3,7 @@ package com.codekhoda.agent.scanner
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import com.codekhoda.domain.filter.SystemPackageFilter
 import com.codekhoda.domain.model.AppPackage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,9 +15,9 @@ class PackageAnalyzer(private val context: Context) {
         val pm = context.packageManager
         val packages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS or PackageManager.GET_SIGNATURES)
         
-        packages.map { pkg ->
-            convertPackageInfo(pkg)
-        }
+        packages
+            .filter { pkg -> !SystemPackageFilter.shouldExclude(pkg.packageName) }
+            .map { pkg -> convertPackageInfo(pkg) }
     }
 
     suspend fun analyzePackage(packageName: String): AppPackage? = withContext(Dispatchers.IO) {

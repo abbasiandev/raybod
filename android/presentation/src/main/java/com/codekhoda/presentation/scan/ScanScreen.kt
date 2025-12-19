@@ -77,14 +77,47 @@ fun ScanScreen(
 
             // Action Area
             if (!state.isScanning) {
+                // Low Speed Mode Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = state.isLowSpeedMode,
+                        onCheckedChange = { viewModel.toggleLowSpeedMode() },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = NeonCyan,
+                            uncheckedColor = TextSecondary
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Low Speed Scan",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
                 CyberButton(
                     text = if (state.results.isEmpty()) "INITIATE SYSTEM SCAN" else "RESCAN SYSTEM",
-                    onClick = { viewModel.startScan() },
+                    onClick = { viewModel.startScan(state.isLowSpeedMode) },
                     variant = ButtonVariant.PRIMARY,
                     modifier = Modifier.fillMaxWidth(0.8f)
                 )
             } else {
                 ScanningStatus(state.currentApp)
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                CyberButton(
+                    text = "STOP SCAN",
+                    onClick = { viewModel.stopScan() },
+                    variant = ButtonVariant.SECONDARY,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
