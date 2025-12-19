@@ -194,23 +194,30 @@ hybrid-cloud-sentinel/
 │   ├── 📂 data/                   # Data layer
 │   │   ├── local/                 # Room database, DAOs
 │   │   ├── remote/                # Retrofit API, DTOs
+│   │   ├── ml/                    # TFLite model, FeatureExtractor
 │   │   └── repository/            # Repository implementations
 │   ├── 📂 presentation/           # UI Layer (Jetpack Compose)
-│   │   ├── theme/                 # Design system
-│   │   ├── dashboard/             # Main dashboard screen
-│   │   └── scan/                  # Scanning screens
+│   │   ├── theme/                 # Cyberpunk design system
+│   │   ├── components/            # Reusable UI components
+│   │   ├── scan/                  # Scanning screens
+│   │   └── about/                 # About screen
 │   └── 📂 agent/                  # System services
-│       ├── service/               # Foreground service
+│       ├── service/               # Foreground service (SentinelService)
 │       └── scanner/               # Package analyzer
 ├── 📂 backend/                    # Python Backend (Cloud Brain)
-│   └── 📂 app/
-│       ├── api/                   # REST endpoints
-│       ├── engine/                # Heuristics & ML
-│       ├── models/                # Database models
-│       └── schemas/               # Pydantic schemas
+│   ├── 📂 app/
+│   │   ├── api/v1/endpoints/      # REST endpoints (scan, auth, dashboard)
+│   │   ├── core/                  # Config, database, security
+│   │   ├── engine/                # Heuristics & ML
+│   │   ├── models/                # SQLAlchemy models (User, ScanLog)
+│   │   ├── schemas/               # Pydantic schemas
+│   │   ├── services/              # Business logic (auth)
+│   │   ├── static/                # CSS, JavaScript
+│   │   └── templates/             # Jinja2 HTML templates (dashboard)
+│   └── 📂 tests/                  # pytest test suite
 ├── 📂 docs/                       # Documentation
-├── 📂 references/                 # Reference repositories
-└── 📂 samples/                    # Test samples
+├── 📂 references/                 # Reference ML models & datasets
+└── 📂 samples/                    # Test APK samples
 ```
 
 ---
