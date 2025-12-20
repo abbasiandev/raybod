@@ -5,19 +5,42 @@ from sqlalchemy.orm import sessionmaker
 import os
 import requests
 import json
+import logging
 from app.core.config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sentinel_brain.db")
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+DATABASE_URL = settings.DATABASE_URL
 
 # For SQLAlchemy, we need to ensure the URL starts with "postgresql://" not "postgres://"
 if DATABASE_URL.startswith("postgres://"):
+    logger.info("Converting postgres:// to postgresql:// in DATABASE_URL")
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Debug: Log database type (safely)
+if DATABASE_URL.startswith("sqlite"):
+    logger.info("Using SQLite database")
+elif DATABASE_URL.startswith("postgresql"):
+    logger.info("Using PostgreSQL database")
+else:
+    logger.warning(f"Using unknown database type: {DATABASE_URL.split(':', 1)[0]}")
 
 engine_args = {}
 if DATABASE_URL.startswith("sqlite"):
     engine_args["connect_args"] = {"check_same_thread": False}
 
-engine = create_engine(DATABASE_URL, **engine_args)
+try:
+    engine = create_engine(DATABASE_URL, **engine_args)
+    # Test connection
+    with engine.connect() as conn:
+        logger.info("Database connection established successfully")
+except Exception as e:
+    logger.error(f"Failed to connect to database at {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else DATABASE_URL}: {e}")
+    # We still create the engine but requests will fail later
+    engine = create_engine(DATABASE_URL, **engine_args)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

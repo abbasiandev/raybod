@@ -13,5 +13,3 @@ data class NetworkFlow(
     val riskLevel: RiskLevel = RiskLevel.UNKNOWN,
     val verdict: String? = null
 )
-
-

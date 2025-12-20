@@ -102,8 +102,8 @@ The Cloud Brain is deployed and accessible at:
 | Component | Platform | Details |
 |-----------|----------|---------|
 | **Backend** | [Liara](https://liara.ir) | Docker container on free tier |
-| **Database** | PostgreSQL 18.0 | `sentinel-db` on Liara |
-| **Network** | Private network | Connects app and database |
+| **Database** | PostgreSQL 16+ | Managed instance on Liara |
+| **Network** | Private network | Connects app and database internally |
 | **Intel Source** | GitHub | Dynamic threat signatures (OTA) |
 
 ---
@@ -162,14 +162,14 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 1. Open the `android/` folder in **Android Studio**
 2. Sync Gradle dependencies
-3. Configure the Cloud Brain URL in your local properties:
+3. Configure the Cloud Brain URL in your `local.properties`:
    ```properties
    # android/local.properties
    # For local development (Emulator):
-   # cloud.brain.url=http://10.0.2.2:8000
+   cloud.brain.url=http://10.0.2.2:8000
    
    # For production (Liara):
-   cloud.brain.url=https://codekhoda-sentinel-brain.liara.run
+   # cloud.brain.url=https://codekhoda-sentinel-brain.liara.run
    ```
 
 ---
@@ -185,20 +185,30 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
 2. **Create PostgreSQL Database**:
-   ```bash
-   liara db create --name your-db --type postgres --public-network
-   ```
+   - Go to Liara Console -> Databases -> Create Database.
+   - Select **PostgreSQL** (version 16 recommended).
+   - Note the **Service Name** (e.g., `sentinel-db`).
 
 3. **Deploy Backend**:
    ```bash
    cd backend
-   liara deploy
+   liara deploy --app codekhoda-sentinel-brain --platform docker --port 8000
    ```
 
-4. **Configure Database URL**:
+4. **Configure Environment Variables**:
+   Liara requires the database connection string. You can find this in the Liara Console under your Database's "Connection Details".
+   
    ```bash
-   liara env set --app codekhoda-sentinel-brain DATABASE_URL=postgresql://user:pass@sentinel-db:5432/postgres
+   # Use the internal connection string for better performance and security
+   liara env set --app codekhoda-sentinel-brain DATABASE_URL=postgresql://USER:PASSWORD@sentinel-db:5432/postgres
    ```
+
+### Database Connection Issues?
+
+If you see `Database initialization failed` in your logs:
+1. Verify `DATABASE_URL` starts with `postgresql://` (the code automatically fixes `postgres://`).
+2. Ensure the database and app are in the same Liara project/network.
+3. Check if the database is still in "Creating" state.
 
 ### Environment Variables
 
@@ -206,6 +216,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://root:xxx@sentinel-db:5432/postgres` |
 | `DEBUG` | Enable debug mode | `false` |
+| `SKIP_INIT_DB` | Skip database seeding on startup | `0` |
 
 ---
 
