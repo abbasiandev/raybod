@@ -1,8 +1,7 @@
 {
-  "app": "codekhoda-sentinel-brain",
-  "platform": "docker",
+  "app": "codekhoda-sentinel",
   "port": 8000,
-  "plan": "free"
+  "disks": []
 }
 
 
