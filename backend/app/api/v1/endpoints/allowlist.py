@@ -6,6 +6,7 @@ from pydantic import BaseModel
 router = APIRouter()
 
 class AllowlistCheckResponse(BaseModel):
+    """Response schema for allowlist verification."""
     package_name: str
     is_allowed: bool
 
@@ -14,12 +15,18 @@ async def check_allowlist(
     package_name: str,
     db: Session = Depends(get_db)
 ):
-    """Fast allowlist check endpoint."""
-    entry = db.query(AllowlistEntry).filter(
+    """
+    Check if a package is in the global allowlist.
+    
+    This is a fast-path check used to skip scanning for known safe packages.
+    Returns immediately without performing any analysis.
+    """
+    allowlist_entry = db.query(AllowlistEntry).filter(
         AllowlistEntry.package_name == package_name
     ).first()
+    
     return AllowlistCheckResponse(
         package_name=package_name,
-        is_allowed=entry is not None
+        is_allowed=allowlist_entry is not None
     )
 

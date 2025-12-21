@@ -12,23 +12,32 @@ import json
 
 router = APIRouter()
 
+# Rate limiting configuration
+RATE_LIMIT_PER_MINUTE = "10/minute"
+
 @router.post("/analyze", response_model=ScanResult)
 async def analyze_app(
     metadata: AppMetadata, 
     request: Request,
     db: Session = Depends(get_db)
 ):
+    """
+    Analyze a single app package for malware and security threats.
+    
+    Applies heuristic analysis and returns risk assessment.
+    Rate limited to prevent abuse.
+    """
     try:
-        # Rate limit is handled by the limiter in app state
+        # Apply rate limiting
         from app.main import limiter
-        @limiter.limit("10/minute")
+        @limiter.limit(RATE_LIMIT_PER_MINUTE)
         async def limited_analyze(request: Request, metadata: AppMetadata):
             return engine.analyze(metadata)
         
-        result = await limited_analyze(request, metadata)
+        scan_result = await limited_analyze(request, metadata)
         
-        # Log scan for analytics dashboard
-        log_entry = ScanLog(
+        # Create audit log entry for analytics
+        scan_log_entry = ScanLog(
             package_name=metadata.package_name,
             version_code=metadata.version_code,
             version_name=metadata.version_name,
@@ -45,20 +54,21 @@ async def analyze_app(
             ip_address=request.client.host if request.client else None,
             timestamp=datetime.utcnow()
         )
-        db.add(log_entry)
+        db.add(scan_log_entry)
         db.commit()
         
-        # Broadcast high-risk threats to websocket clients
-        if result.risk_level in ["HIGH", "CRITICAL"]:
-            await manager.broadcast(json.dumps({
+        # Broadcast critical threats to connected clients via WebSocket
+        if scan_result.risk_level in ["HIGH", "CRITICAL"]:
+            threat_notification = {
                 "type": "NEW_THREAT",
-                "package_name": result.package_name,
-                "risk_level": result.risk_level.value,
-                "threat_type": result.threat_type,
+                "package_name": scan_result.package_name,
+                "risk_level": scan_result.risk_level.value,
+                "threat_type": scan_result.threat_type,
                 "timestamp": datetime.utcnow().isoformat()
-            }))
+            }
+            await manager.broadcast(json.dumps(threat_notification))
         
-        return result
+        return scan_result
     except RateLimitExceeded:
         raise HTTPException(status_code=429, detail="Too many requests")
     except Exception as e:
@@ -75,14 +85,15 @@ async def batch_scan(
     # Note: Rate limiting for batch can be handled per-request or per-app in batch.
     # For now, we apply it to the whole request.
     from app.main import limiter
-    @limiter.limit("10/minute")
+    @limiter.limit(RATE_LIMIT_PER_MINUTE)
     async def limited_batch(request: Request):
-        batch_results = []
-        for metadata in batch_data.packages:
-            result = engine.analyze(metadata)
+        scan_results = []
+        
+        for package_metadata in batch_data.packages:
+            analysis_result = engine.analyze(package_metadata)
             
-            # Log each scan
-            log_entry = ScanLog(
+            # Create audit log for each package in batch
+            scan_log_entry = ScanLog(
                 package_name=metadata.package_name,
                 version_code=metadata.version_code,
                 version_name=metadata.version_name,
@@ -99,14 +110,15 @@ async def batch_scan(
                 ip_address=request.client.host if request.client else None,
                 timestamp=datetime.utcnow()
             )
-            db.add(log_entry)
-            batch_results.append(result)
+            db.add(scan_log_entry)
+            scan_results.append(analysis_result)
+        
         db.commit()
-        return batch_results
+        return scan_results
 
     try:
-        results = await limited_batch(request)
-        return BatchScanResult(results=results)
+        batch_scan_results = await limited_batch(request)
+        return BatchScanResult(results=batch_scan_results)
     except RateLimitExceeded:
         raise HTTPException(status_code=429, detail="Too many requests")
     except Exception as e:
@@ -118,12 +130,16 @@ async def report_feedback(
     db: Session = Depends(get_db)
 ):
     """Report false positive or feedback on a scan result to improve model (Concept Drift)."""
-    feedback_entry = ThreatFeedback(
+    user_feedback = ThreatFeedback(
         package_name=report.package_name,
         is_false_positive=report.is_false_positive,
         user_comment=report.user_comment,
         original_risk_level=report.original_risk_level.value
     )
-    db.add(feedback_entry)
+    db.add(user_feedback)
     db.commit()
-    return {"status": "success", "message": "Feedback received. Thank you for helping us improve!"}
+    
+    return {
+        "status": "success", 
+        "message": "Feedback received. Thank you for helping us improve!"
+    }
