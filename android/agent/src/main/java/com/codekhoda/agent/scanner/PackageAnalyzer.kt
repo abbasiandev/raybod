@@ -12,84 +12,84 @@ import java.security.MessageDigest
 class PackageAnalyzer(private val context: Context) {
 
     suspend fun getInstalledApps(): List<AppPackage> = withContext(Dispatchers.IO) {
-        val pm = context.packageManager
-        val flags = PackageManager.GET_PERMISSIONS or 
-                    PackageManager.GET_SIGNATURES or 
-                    PackageManager.GET_ACTIVITIES or 
-                    PackageManager.GET_SERVICES or 
-                    PackageManager.GET_RECEIVERS
+        val packageManager = context.packageManager
+        val packageInfoFlags = PackageManager.GET_PERMISSIONS or 
+                               PackageManager.GET_SIGNATURES or 
+                               PackageManager.GET_ACTIVITIES or 
+                               PackageManager.GET_SERVICES or 
+                               PackageManager.GET_RECEIVERS
                     
-        val packages = pm.getInstalledPackages(flags)
+        val installedPackages = packageManager.getInstalledPackages(packageInfoFlags)
         
-        packages
-            .filter { pkg -> !SystemPackageFilter.shouldExclude(pkg.packageName) }
-            .map { pkg -> convertPackageInfo(pkg) }
+        installedPackages
+            .filter { packageInfo -> !SystemPackageFilter.shouldExclude(packageInfo.packageName) }
+            .map { packageInfo -> convertPackageInfo(packageInfo) }
     }
 
     suspend fun analyzePackage(packageName: String): AppPackage? = withContext(Dispatchers.IO) {
         try {
-            val pm = context.packageManager
-            val flags = PackageManager.GET_PERMISSIONS or 
-                        PackageManager.GET_SIGNATURES or 
-                        PackageManager.GET_ACTIVITIES or 
-                        PackageManager.GET_SERVICES or 
-                        PackageManager.GET_RECEIVERS
+            val packageManager = context.packageManager
+            val packageInfoFlags = PackageManager.GET_PERMISSIONS or 
+                                   PackageManager.GET_SIGNATURES or 
+                                   PackageManager.GET_ACTIVITIES or 
+                                   PackageManager.GET_SERVICES or 
+                                   PackageManager.GET_RECEIVERS
                         
-            val pkg = pm.getPackageInfo(packageName, flags)
-            convertPackageInfo(pkg)
+            val packageInfo = packageManager.getPackageInfo(packageName, packageInfoFlags)
+            convertPackageInfo(packageInfo)
         } catch (e: Exception) {
             null
         }
     }
 
-    private fun convertPackageInfo(pkg: PackageInfo): AppPackage {
-        val permissions = pkg.requestedPermissions?.toList() ?: emptyList()
-        val signature = getSignature(pkg)
+    private fun convertPackageInfo(packageInfo: PackageInfo): AppPackage {
+        val permissions = packageInfo.requestedPermissions?.toList() ?: emptyList()
+        val signature = getSignature(packageInfo)
         val intents = try {
-            getListOfIntents(pkg.packageName)
+            getListOfIntents(packageInfo.packageName)
         } catch (e: Exception) {
             emptyList<String>()
         }
         
-        val nativeLibs = getNativeLibraries(pkg)
-        val (hasReflection, hasDynamicLoading) = analyzeSuspiciousApis(pkg)
+        val nativeLibraries = getNativeLibraries(packageInfo)
+        val (hasReflection, hasDynamicLoading) = analyzeSuspiciousApis(packageInfo)
         
         return AppPackage(
-            packageName = pkg.packageName,
-            versionCode = if (android.os.Build.VERSION.SDK_INT >= 28) pkg.longVersionCode else pkg.versionCode.toLong(),
-            versionName = pkg.versionName ?: "",
+            packageName = packageInfo.packageName,
+            versionCode = if (android.os.Build.VERSION.SDK_INT >= 28) packageInfo.longVersionCode else packageInfo.versionCode.toLong(),
+            versionName = packageInfo.versionName ?: "",
             signature = signature,
             permissions = permissions,
             intents = intents,
-            installTime = pkg.firstInstallTime,
-            lastUpdateTime = pkg.lastUpdateTime,
-            nativeLibraries = nativeLibs,
-            activityCount = pkg.activities?.size ?: 0,
-            serviceCount = pkg.services?.size ?: 0,
-            receiverCount = pkg.receivers?.size ?: 0,
+            installTime = packageInfo.firstInstallTime,
+            lastUpdateTime = packageInfo.lastUpdateTime,
+            nativeLibraries = nativeLibraries,
+            activityCount = packageInfo.activities?.size ?: 0,
+            serviceCount = packageInfo.services?.size ?: 0,
+            receiverCount = packageInfo.receivers?.size ?: 0,
             hasReflection = hasReflection,
             hasDynamicLoading = hasDynamicLoading,
             
-            // Phase B: Enhanced Metadata
-            appLabel = getAppLabel(pkg),
-            category = getAppCategory(pkg),
-            installedSize = getInstalledSize(pkg),
-            targetSdkVersion = pkg.applicationInfo.targetSdkVersion,
-            minSdkVersion = if (android.os.Build.VERSION.SDK_INT >= 24) pkg.applicationInfo.minSdkVersion else 0
+            // Enhanced metadata for context-aware analysis
+            appLabel = getAppLabel(packageInfo),
+            category = getAppCategory(packageInfo),
+            installedSize = getInstalledSize(packageInfo),
+            targetSdkVersion = packageInfo.applicationInfo.targetSdkVersion,
+            minSdkVersion = if (android.os.Build.VERSION.SDK_INT >= 24) packageInfo.applicationInfo.minSdkVersion else 0
         )
     }
 
-    private fun getAppLabel(pkg: PackageInfo): String {
+    private fun getAppLabel(packageInfo: PackageInfo): String {
         return try {
-            pkg.applicationInfo.loadLabel(context.packageManager).toString()
+            packageInfo.applicationInfo.loadLabel(context.packageManager).toString()
         } catch (e: Exception) {
-            pkg.packageName
+            packageInfo.packageName
         }
     }
 
-    private fun getAppCategory(pkg: PackageInfo): String {
+    private fun getAppCategory(packageInfo: PackageInfo): String {
         return if (android.os.Build.VERSION.SDK_INT >= 26) {
-            when (pkg.applicationInfo.category) {
+            when (packageInfo.applicationInfo.category) {
                 android.content.pm.ApplicationInfo.CATEGORY_GAME -> "Game"
                 android.content.pm.ApplicationInfo.CATEGORY_AUDIO -> "Audio"
                 android.content.pm.ApplicationInfo.CATEGORY_VIDEO -> "Video"
@@ -105,30 +105,30 @@ class PackageAnalyzer(private val context: Context) {
         }
     }
 
-    private fun getInstalledSize(pkg: PackageInfo): Long {
+    private fun getInstalledSize(packageInfo: PackageInfo): Long {
         return try {
-            java.io.File(pkg.applicationInfo.sourceDir).length()
+            java.io.File(packageInfo.applicationInfo.sourceDir).length()
         } catch (e: Exception) {
             0L
         }
     }
 
-    private fun analyzeSuspiciousApis(pkg: PackageInfo): Pair<Boolean, Boolean> {
-        // In a real scenario, this would involve scanning the DEX files for 
-        // Ljava/lang/reflect/Method;->invoke or Landroidx/loader/content/CursorLoader; etc.
-        // For this implementation, we simulate detection by looking for common 
-        // libraries or patterns in the application info.
+    private fun analyzeSuspiciousApis(packageInfo: PackageInfo): Pair<Boolean, Boolean> {
+        // Detect reflection and dynamic code loading patterns
+        // In production, this would involve DEX file analysis for patterns like:
+        // - Ljava/lang/reflect/Method;->invoke
+        // - DexClassLoader/PathClassLoader usage
         
         var reflectionFound = false
         var dynamicLoadingFound = false
         
         try {
-            val sourceDir = pkg.applicationInfo.sourceDir
-            val file = java.io.File(sourceDir)
-            if (file.exists()) {
-                // Heuristic: Many malware samples that use reflection or dynamic loading
-                // will have certain strings visible even in a quick scan of the APK.
-                val bytes = file.inputStream().use { it.readNBytes(1024 * 50) } // Read first 50KB
+            val sourceDir = packageInfo.applicationInfo.sourceDir
+            val apkFile = java.io.File(sourceDir)
+            if (apkFile.exists()) {
+                // Heuristic: Scan first 50KB of APK for suspicious patterns
+                // Many malware samples leave detectable strings even without full DEX analysis
+                val bytes = apkFile.inputStream().use { it.readNBytes(1024 * 50) }
                 val content = String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
                 
                 if (content.contains("DexClassLoader") || content.contains("PathClassLoader")) {
@@ -145,27 +145,27 @@ class PackageAnalyzer(private val context: Context) {
         return Pair(reflectionFound, dynamicLoadingFound)
     }
 
-    private fun getNativeLibraries(pkg: PackageInfo): List<String> {
-        val libs = mutableListOf<String>()
+    private fun getNativeLibraries(packageInfo: PackageInfo): List<String> {
+        val nativeLibraryList = mutableListOf<String>()
         try {
-            val nativeLibDir = pkg.applicationInfo.nativeLibraryDir
-            val dir = java.io.File(nativeLibDir)
-            if (dir.exists() && dir.isDirectory) {
-                dir.listFiles()?.forEach { file ->
-                    if (file.name.endsWith(".so")) {
-                        libs.add(file.name)
+            val nativeLibDir = packageInfo.applicationInfo.nativeLibraryDir
+            val libDirectory = java.io.File(nativeLibDir)
+            if (libDirectory.exists() && libDirectory.isDirectory) {
+                libDirectory.listFiles()?.forEach { libFile ->
+                    if (libFile.name.endsWith(".so")) {
+                        nativeLibraryList.add(libFile.name)
                     }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return libs
+        return nativeLibraryList
     }
 
-    private fun getSignature(pkg: PackageInfo): String {
+    private fun getSignature(packageInfo: PackageInfo): String {
         return try {
-             val signatures = pkg.signatures
+             val signatures = packageInfo.signatures
              if (signatures != null && signatures.isNotEmpty()) {
                  hashString("SHA-256", signatures[0].toByteArray())
              } else {

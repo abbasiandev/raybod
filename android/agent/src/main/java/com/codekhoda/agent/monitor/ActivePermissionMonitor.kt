@@ -17,12 +17,19 @@ class ActivePermissionMonitor @Inject constructor(
     private val behaviorAnalysisEngine: BehaviorAnalysisEngine
 ) {
 
+    companion object {
+        private const val ACTIVE_CHECK_WINDOW_MS = 1000L  // Check last 1 second
+    }
+
     /**
-     * Checks for currently running sensitive permissions and triggers the overlay if found.
-     * Should be called periodically (e.g., every 1-2 seconds) when monitoring is active.
+     * Checks for currently active sensitive permission usage and displays overlay notification.
+     * 
+     * Should be called periodically (every 1-2 seconds) when real-time monitoring is active.
+     * Triggers visual overlay to alert user of active camera/microphone/location usage.
      */
     fun checkAndNotify() {
-        val targetOps = arrayOf(
+        // Monitor critical permissions for real-time alerts
+        val monitoredOperations = arrayOf(
             AppOpsManager.OPSTR_CAMERA,
             AppOpsManager.OPSTR_RECORD_AUDIO,
             AppOpsManager.OPSTR_FINE_LOCATION,
@@ -66,8 +73,11 @@ class ActivePermissionMonitor @Inject constructor(
         }
     }
 
-    private fun getPermissionFromOp(op: String): String? {
-        return when (op) {
+    /**
+     * Maps AppOps operation strings to Android permission strings.
+     */
+    private fun getPermissionFromOp(operationString: String): String? {
+        return when (operationString) {
             AppOpsManager.OPSTR_CAMERA -> "android.permission.CAMERA"
             AppOpsManager.OPSTR_RECORD_AUDIO -> "android.permission.RECORD_AUDIO"
             AppOpsManager.OPSTR_FINE_LOCATION -> "android.permission.ACCESS_FINE_LOCATION"

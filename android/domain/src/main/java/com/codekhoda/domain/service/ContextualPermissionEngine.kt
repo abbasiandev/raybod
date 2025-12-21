@@ -8,6 +8,11 @@ package com.codekhoda.domain.service
  */
 object ContextualPermissionEngine {
 
+    // Score weights for context analysis
+    private const val CONTEXT_UNEXPECTED_PERMISSION_BOOST = 0.15f
+    private const val CONTEXT_SUSPICIOUS_PERMISSION_BOOST = 0.3f
+    private const val CONTEXT_UNKNOWN_CATEGORY_PENALTY = 0.1f
+
     /**
      * App categories for context-aware analysis.
      */
@@ -136,19 +141,19 @@ object ContextualPermissionEngine {
                 // Always suspicious permissions get highest weight
                 alwaysSuspiciousPermissions.contains(permission) -> {
                     suspiciousPermissions.add(permission)
-                    score += 0.3f
+                    score += CONTEXT_SUSPICIOUS_PERMISSION_BOOST
                 }
                 // Unexpected for category
                 !expected.contains(permission) && isDangerousPermission(permission) -> {
                     unexpectedPermissions.add(permission)
-                    score += 0.15f
+                    score += CONTEXT_UNEXPECTED_PERMISSION_BOOST
                 }
             }
         }
         
         // Unknown category gets slight penalty (can't verify context)
         if (category == AppCategory.UNKNOWN) {
-            score += 0.1f
+            score += CONTEXT_UNKNOWN_CATEGORY_PENALTY
         }
         
         return ContextAnalysisResult(

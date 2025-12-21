@@ -48,23 +48,23 @@ class FeatureExtractor @Inject constructor(
 
     init {
         val json = loadJSONFromAsset("features.json")
-        var pList = mutableListOf<String>()
-        var iList = mutableListOf<String>()
+        var permissionFeatureList = mutableListOf<String>()
+        var intentFeatureList = mutableListOf<String>()
         
         try {
             val gson = Gson()
             val type = object : TypeToken<Map<String, List<String>>>() {}.type
             val data: Map<String, List<String>> = gson.fromJson(json, type)
             
-            pList = data["permissions"]?.toMutableList() ?: mutableListOf()
-            iList = data["intents"]?.toMutableList() ?: mutableListOf()
+            permissionFeatureList = data["permissions"]?.toMutableList() ?: mutableListOf()
+            intentFeatureList = data["intents"]?.toMutableList() ?: mutableListOf()
             
         } catch (e: Exception) {
             e.printStackTrace()
         }
         
-        permissionFeatures = pList
-        intentFeatures = iList
+        permissionFeatures = permissionFeatureList
+        intentFeatures = intentFeatureList
         
         // Ensure vector size matches model expectation
         vectorSize = 2000
@@ -73,15 +73,15 @@ class FeatureExtractor @Inject constructor(
     fun extractFeatures(appPackage: AppPackage): FeatureAnalysisResult {
         val vector = FloatArray(vectorSize) { 0f }
         
-        // Categorized DREBIN sets
-        val s1 = mutableListOf<String>()
-        val s2 = appPackage.permissions.toMutableList() // S2 is requested permissions
-        val s3 = mutableListOf<String>()
-        val s4 = appPackage.intents.toMutableList()    // S4 is filtered intents
-        val s5 = mutableListOf<String>()
-        val s6 = mutableListOf<String>() // To be derived from S5 (requires deep dex analysis)
-        val s7 = mutableListOf<String>()
-        val s8 = mutableListOf<String>()
+        // Categorized DREBIN feature sets (8 categories for malware detection)
+        val hardwareFeatures = mutableListOf<String>()              // S1: Hardware features
+        val requestedPermissions = appPackage.permissions.toMutableList()  // S2: Requested permissions
+        val appComponents = mutableListOf<String>()                 // S3: App components
+        val filteredIntents = appPackage.intents.toMutableList()    // S4: Filtered intents
+        val restrictedApis = mutableListOf<String>()                // S5: Restricted API calls
+        val usedPermissions = mutableListOf<String>()               // S6: Actually used permissions (requires DEX analysis)
+        val suspiciousApis = mutableListOf<String>()                // S7: Suspicious API patterns
+        val networkAddresses = mutableListOf<String>()              // S8: Network addresses
 
         // 1. Map Permissions (S2)
         permissionFeatures.forEachIndexed { index, feature ->
@@ -103,21 +103,20 @@ class FeatureExtractor @Inject constructor(
             }
         }
 
-        // 3. Populate S3 (Components)
-        if (appPackage.activityCount > 0) s3.add("Activities: ${appPackage.activityCount}")
-        if (appPackage.serviceCount > 0) s3.add("Services: ${appPackage.serviceCount}")
-        if (appPackage.receiverCount > 0) s3.add("Receivers: ${appPackage.receiverCount}")
+        // 3. Populate app components (S3)
+        if (appPackage.activityCount > 0) appComponents.add("Activities: ${appPackage.activityCount}")
+        if (appPackage.serviceCount > 0) appComponents.add("Services: ${appPackage.serviceCount}")
+        if (appPackage.receiverCount > 0) appComponents.add("Receivers: ${appPackage.receiverCount}")
 
-        // 4. Populate S1 (Hardware)
-        if (appPackage.permissions.contains("android.permission.CAMERA")) s1.add("android.hardware.camera")
-        if (appPackage.permissions.contains("android.permission.ACCESS_FINE_LOCATION")) s1.add("android.hardware.location.gps")
-        if (appPackage.permissions.contains("android.permission.RECORD_AUDIO")) s1.add("android.hardware.microphone")
+        // 4. Populate hardware features (S1)
+        if (appPackage.permissions.contains("android.permission.CAMERA")) hardwareFeatures.add("android.hardware.camera")
+        if (appPackage.permissions.contains("android.permission.ACCESS_FINE_LOCATION")) hardwareFeatures.add("android.hardware.location.gps")
+        if (appPackage.permissions.contains("android.permission.RECORD_AUDIO")) hardwareFeatures.add("android.hardware.microphone")
 
-        // 5. Categorize existing heuristic logic into S5/S7/S8
-        
-        // Literal strings / Obfuscation -> S7 (Suspicious Patterns)
+        // 5. Categorize heuristic patterns into suspicious APIs, restricted APIs, and network features
+        // Detect suspicious package naming patterns
         if (appPackage.packageName.length < 5 || appPackage.packageName.split(".").size < 2) {
-            s7.add("Highly unusual package naming")
+            suspiciousApis.add("Highly unusual package naming")
         }
         
         val maliciousPatterns = listOf(
@@ -126,69 +125,73 @@ class FeatureExtractor @Inject constructor(
         )
         maliciousPatterns.forEach { pattern ->
             if (appPackage.packageName.contains(pattern, ignoreCase = true)) {
-                s7.add("Malicious string '$pattern' found in package name")
+                suspiciousApis.add("Malicious string '$pattern' found in package name")
             }
         }
 
-        val parts = appPackage.packageName.split(".")
-        if (parts.any { it.length == 1 }) {
-            s7.add("Potential obfuscation (single-letter package part)")
+        val packageParts = appPackage.packageName.split(".")
+        if (packageParts.any { it.length == 1 }) {
+            suspiciousApis.add("Potential obfuscation (single-letter package part)")
         }
 
-        val fakeSystemPatterns = listOf("com.android.system.update", "com.google.android.gm.system", "android.security.update")
+        val fakeSystemPatterns = listOf(
+            "com.android.system.update", 
+            "com.google.android.gm.system", 
+            "android.security.update"
+        )
         if (fakeSystemPatterns.any { appPackage.packageName.equals(it, ignoreCase = true) }) {
-            s7.add("Likely impersonation of system components")
+            suspiciousApis.add("Likely impersonation of system components")
         }
 
-        // Native Libraries -> S7
+        // Check for suspicious native libraries
         if (appPackage.nativeLibraries.isNotEmpty()) {
-            val suspiciousLibs = listOf(
+            val suspiciousLibraryPatterns = listOf(
                 "crypto", "ssl", "ssh", "payload", "shell", "proxy", "inject",
                 "metasploit", "frida", "xposed", "substrate", "magisk"
             )
-            appPackage.nativeLibraries.forEach { lib ->
-                if (suspiciousLibs.any { lib.contains(it, ignoreCase = true) }) {
-                    s7.add("Suspicious native library '$lib'")
+            appPackage.nativeLibraries.forEach { libraryName ->
+                if (suspiciousLibraryPatterns.any { libraryName.contains(it, ignoreCase = true) }) {
+                    suspiciousApis.add("Suspicious native library '$libraryName'")
                 }
             }
         }
 
-        // Restricted APIs (Simulated) -> S5
+        // Detect restricted API usage
         if (appPackage.permissions.contains("android.permission.BIND_ACCESSIBILITY_SERVICE")) {
-            s5.add("Accessibility Service (Potential UI Hijacking)")
+            restrictedApis.add("Accessibility Service (Potential UI Hijacking)")
         }
         
-        // Structural Outliers -> S7
+        // Detect structural anomalies (unusually high service ratio)
         val totalComponents = appPackage.activityCount + appPackage.serviceCount + appPackage.receiverCount
         if (totalComponents > 0) {
             val serviceRatio = appPackage.serviceCount.toFloat() / totalComponents.toFloat()
             if (serviceRatio > 0.8f && totalComponents > 5) {
-                s7.add("Extremely high service-to-component ratio")
+                suspiciousApis.add("Extremely high service-to-component ratio")
             }
         }
         
-        // Category 2.1: Advanced Evasion Detection
+        // Advanced evasion detection (reflection and dynamic code loading)
         if (appPackage.hasReflection) {
-            s7.add("Reflection usage detected (Potential Obfuscation)")
+            suspiciousApis.add("Reflection usage detected (Potential Obfuscation)")
         }
         if (appPackage.hasDynamicLoading) {
-            s5.add("Dynamic Code Loading (High Risk)")
+            restrictedApis.add("Dynamic Code Loading (High Risk)")
         }
 
-        // Network Addresses -> S8
+        // Network capability detection
         if (appPackage.permissions.contains("android.permission.INTERNET")) {
-            s8.add("Internet communication enabled")
+            networkAddresses.add("Internet communication enabled")
         }
 
         val drebinFeatures = DrebinFeatures(
-            s1Hardware = s1,
-            s2RequestedPermissions = s2,
-            s3AppComponents = s3,
-            s4FilteredIntents = s4,
-            s5RestrictedApis = s5,
-            s6UsedPermissions = s6,
-            s7SuspiciousApis = s7,
-            s8NetworkAddresses = s8
+            s1Hardware = hardwareFeatures,
+            s2RequestedPermissions = requestedPermissions,
+            s3AppComponents = appComponents,
+            s4FilteredIntents = filteredIntents,
+            s5RestrictedApis = restrictedApis,
+            s6UsedPermissions = usedPermissions,
+            s7SuspiciousApis = suspiciousApis,
+            s8NetworkAddresses = networkAddresses
         )
 
         return FeatureAnalysisResult(vector, drebinFeatures)

@@ -43,6 +43,12 @@ class ScanViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState = _uiState.asStateFlow()
     
+    private companion object {
+        const val FREEMIUM_DAILY_SCAN_LIMIT = 3
+        const val LOW_SPEED_DELAY_MS = 500L
+        const val MAX_RECENT_APPS_DISPLAY = 5
+    }
+    
     init {
         checkIntegrity()
     }
@@ -59,7 +65,6 @@ class ScanViewModel @Inject constructor(
     }
     
     private var scanJob: Job? = null
-    private val LOW_SPEED_DELAY_MS = 500L // Delay between each app scan in low-speed mode
 
     fun startScan(lowSpeedMode: Boolean = false) {
         // Cancel any existing scan
@@ -75,10 +80,10 @@ class ScanViewModel @Inject constructor(
             val isNewDay = !isSameDay(lastScan, currentTime)
             val currentDayCount = if (isNewDay) 0 else scanCount
             
-            // Limit Freemium to 3 scans per day
-            if (plan == "FREEMIUM" && currentDayCount >= 3) {
+            // Limit Freemium to specified number of scans per day
+            if (plan == "FREEMIUM" && currentDayCount >= FREEMIUM_DAILY_SCAN_LIMIT) {
                 _uiState.value = _uiState.value.copy(
-                    error = "Daily scan limit reached (3/3). Upgrade to Premium for unlimited protection!"
+                    error = "Daily scan limit reached ($FREEMIUM_DAILY_SCAN_LIMIT/$FREEMIUM_DAILY_SCAN_LIMIT). Upgrade to Premium for unlimited protection!"
                 )
                 return@launch
             }
@@ -114,7 +119,7 @@ class ScanViewModel @Inject constructor(
                 }
                 
                 val currentRecentApps = (_uiState.value.recentApps + (app.packageName to app.appLabel))
-                    .takeLast(5)
+                    .takeLast(MAX_RECENT_APPS_DISPLAY)
 
                 _uiState.value = _uiState.value.copy(
                     progress = index / total.toFloat(),

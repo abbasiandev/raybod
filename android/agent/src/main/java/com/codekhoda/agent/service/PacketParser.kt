@@ -4,54 +4,78 @@ import java.nio.ByteBuffer
 
 object PacketParser {
     
+    private const val DNS_HEADER_SIZE = 12
+    
+    /**
+     * Extracts domain name from DNS query packet (UDP port 53).
+     * 
+     * Parses DNS packet format to extract the queried domain name.
+     * Used for identifying which domains apps are contacting.
+     * 
+     * @param payload Raw DNS packet payload
+     * @return Domain name or null if parsing fails
+     */
     fun extractDnsQuery(payload: ByteArray): String? {
-        // Simple DNS query extraction (standard port 53)
-        // This is a simplified version for demonstration
         try {
-            if (payload.size < 12) return null
-            // Skip DNS header (12 bytes)
-            var pos = 12
-            val domain = StringBuilder()
-            while (pos < payload.size) {
-                val len = payload[pos].toInt()
-                if (len == 0) break
-                pos++
-                if (domain.isNotEmpty()) domain.append(".")
-                domain.append(String(payload.sliceArray(pos until pos + len)))
-                pos += len
+            if (payload.size < DNS_HEADER_SIZE) return null
+            
+            // Skip DNS header, parse domain labels
+            var position = DNS_HEADER_SIZE
+            val domainBuilder = StringBuilder()
+            
+            while (position < payload.size) {
+                val labelLength = payload[position].toInt()
+                if (labelLength == 0) break  // End of domain name
+                
+                position++
+                if (domainBuilder.isNotEmpty()) domainBuilder.append(".")
+                domainBuilder.append(String(payload.sliceArray(position until position + labelLength)))
+                position += labelLength
             }
-            return if (domain.isNotEmpty()) domain.toString() else null
+            
+            return if (domainBuilder.isNotEmpty()) domainBuilder.toString() else null
         } catch (e: Exception) {
             return null
         }
     }
 
+    /**
+     * Extracts Server Name Indication (SNI) from TLS Client Hello packet.
+     * 
+     * Parses TLS handshake to extract the hostname being connected to.
+     * This reveals HTTPS destinations even though content is encrypted.
+     * 
+     * @param payload Raw TLS packet payload
+     * @return Hostname from SNI extension or null if not found
+     */
     fun extractSni(payload: ByteArray): String? {
-        // Simple TLS SNI extraction
-        // Look for TLS handshake (0x16), Client Hello (0x01)
         try {
-            var pos = 0
-            if (payload[pos] != 0x16.toByte()) return null
-            pos += 5 // Skip TLS record header
-            if (payload[pos] != 0x01.toByte()) return null
-            pos += 38 // Skip Handshake header, Version, Random
+            var position = 0
             
-            // Session ID
-            val sessionIdLen = payload[pos].toInt()
-            pos += 1 + sessionIdLen
+            // Check for TLS handshake record (0x16)
+            if (payload[position] != 0x16.toByte()) return null
+            position += 5  // Skip TLS record header
             
-            // Cipher Suites
-            val cipherSuitesLen = ((payload[pos].toInt() and 0xFF) shl 8) or (payload[pos+1].toInt() and 0xFF)
-            pos += 2 + cipherSuitesLen
+            // Check for Client Hello message (0x01)
+            if (payload[position] != 0x01.toByte()) return null
+            position += 38  // Skip handshake header, version, random
             
-            // Compression Methods
-            val compressionLen = payload[pos].toInt()
-            pos += 1 + compressionLen
+            // Parse Session ID length and skip
+            val sessionIdLength = payload[position].toInt()
+            position += 1 + sessionIdLength
             
-            // Extensions
-            val extensionsLen = ((payload[pos].toInt() and 0xFF) shl 8) or (payload[pos+1].toInt() and 0xFF)
-            pos += 2
-            val extensionsEnd = pos + extensionsLen
+            // Parse and skip Cipher Suites
+            val cipherSuitesLength = ((payload[position].toInt() and 0xFF) shl 8) or (payload[position+1].toInt() and 0xFF)
+            position += 2 + cipherSuitesLength
+            
+            // Parse and skip Compression Methods
+            val compressionLength = payload[position].toInt()
+            position += 1 + compressionLength
+            
+            // Parse Extensions (where SNI lives)
+            val extensionsLength = ((payload[position].toInt() and 0xFF) shl 8) or (payload[position+1].toInt() and 0xFF)
+            position += 2
+            val extensionsEnd = position + extensionsLength
             
             while (pos < extensionsEnd && pos < payload.size) {
                 val extType = ((payload[pos].toInt() and 0xFF) shl 8) or (payload[pos+1].toInt() and 0xFF)

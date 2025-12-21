@@ -18,8 +18,16 @@ class ModelUpdateWorker @AssistedInject constructor(
     private val malwareScanner: MalwareScanner
 ) : CoroutineWorker(context, workerParams) {
 
+    companion object {
+        private const val TAG = "ModelUpdateWorker"
+        private const val PREFS_NAME = "sentinel_prefs"
+        private const val PREF_KEY_MODEL_VERSION = "model_version"
+        private const val DEFAULT_MODEL_VERSION = "1.0.0"
+        private const val MODEL_FILENAME = "updated_model.tflite"
+    }
+
     override suspend fun doWork(): Result {
-        Log.d("ModelUpdateWorker", "Starting background sync...")
+        Log.d(TAG, "Starting background sync...")
         
         // 1. Update Package Lists (Whitelist/Blacklist)
         try {

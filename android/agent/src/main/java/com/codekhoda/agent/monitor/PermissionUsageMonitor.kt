@@ -13,36 +13,51 @@ import javax.inject.Singleton
 class PermissionUsageMonitor @Inject constructor(
     private val appOpsWrapper: AppOpsWrapper
 ) {
-    fun getRecentPermissionUsage(durationMs: Long = 3600000): List<PermissionUsageEvent> { // Default 1 hour
-        val targetOps = arrayOf(
+
+    companion object {
+        private const val DEFAULT_DURATION_MS = 3600000L  // 1 hour
+    }
+
+    /**
+     * Retrieves recent permission usage events for sensitive operations.
+     * 
+     * @param durationMs Time window to check (milliseconds)
+     * @return List of permission usage events sorted by most recent first
+     */
+    fun getRecentPermissionUsage(durationMs: Long = DEFAULT_DURATION_MS): List<PermissionUsageEvent> {
+        // Monitor critical permissions that are commonly abused
+        val monitoredOperations = arrayOf(
             AppOpsManager.OPSTR_CAMERA,
             AppOpsManager.OPSTR_RECORD_AUDIO,
             AppOpsManager.OPSTR_FINE_LOCATION,
             AppOpsManager.OPSTR_COARSE_LOCATION
         )
         
-        val ops = appOpsWrapper.getRecentOps(durationMs, targetOps)
-        val events = mutableListOf<PermissionUsageEvent>()
+        val recentOperations = appOpsWrapper.getRecentOps(durationMs, monitoredOperations)
+        val permissionEvents = mutableListOf<PermissionUsageEvent>()
 
-        ops.forEach { opData ->
-            val permission = opData.op
-            val accessType = mapOpToAccessType(permission)
+        recentOperations.forEach { operationData ->
+            val permissionName = operationData.op
+            val accessType = mapOpToAccessType(permissionName)
             
-            events.add(PermissionUsageEvent(
-                packageName = opData.packageName,
-                permission = permission,
-                timestamp = opData.timestamp,
-                wasInForeground = opData.isForeground,
-                durationMs = opData.duration,
+            permissionEvents.add(PermissionUsageEvent(
+                packageName = operationData.packageName,
+                permission = permissionName,
+                timestamp = operationData.timestamp,
+                wasInForeground = operationData.isForeground,
+                durationMs = operationData.duration,
                 accessType = accessType
             ))
         }
         
-        return events.sortedByDescending { it.timestamp }
+        return permissionEvents.sortedByDescending { it.timestamp }
     }
 
-    private fun mapOpToAccessType(op: String): AccessType {
-        return when (op) {
+    /**
+     * Maps AppOps operation strings to our domain AccessType enum.
+     */
+    private fun mapOpToAccessType(operationName: String): AccessType {
+        return when (operationName) {
             AppOpsManager.OPSTR_CAMERA -> AccessType.CAMERA
             AppOpsManager.OPSTR_RECORD_AUDIO -> AccessType.MICROPHONE
             AppOpsManager.OPSTR_FINE_LOCATION, 

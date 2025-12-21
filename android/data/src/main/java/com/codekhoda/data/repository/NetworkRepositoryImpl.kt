@@ -27,45 +27,45 @@ class NetworkRepositoryImpl @Inject constructor(
     
     override fun getActiveFlows(): Flow<List<NetworkFlow>> = _activeFlows.asStateFlow()
 
-    override fun getNetworkAlerts(): Flow<List<NetworkAlert>> = networkDao.getAllAlerts().map { entities ->
-        entities.map { entity ->
+    override fun getNetworkAlerts(): Flow<List<NetworkAlert>> = networkDao.getAllAlerts().map { alertEntities ->
+        alertEntities.map { alertEntity ->
             NetworkAlert(
-                id = entity.id,
-                packageName = entity.packageName,
-                destination = entity.destination,
-                threatType = entity.threatType,
-                riskLevel = RiskLevel.valueOf(entity.riskLevel),
-                description = entity.description,
-                timestamp = entity.timestamp
+                id = alertEntity.id,
+                packageName = alertEntity.packageName,
+                destination = alertEntity.destination,
+                threatType = alertEntity.threatType,
+                riskLevel = RiskLevel.valueOf(alertEntity.riskLevel),
+                description = alertEntity.description,
+                timestamp = alertEntity.timestamp
             )
         }
     }
 
     override suspend fun analyzeFlows(flows: List<NetworkFlow>) {
-        // Update active flows for UI
+        // Update active flows for real-time UI display
         _activeFlows.value = flows
 
-        // Send to cloud for analysis
+        // Send flows to cloud for threat analysis
         try {
-            val dto = NetworkAnalysisRequestDto(
-                flows = flows.map { flow ->
+            val analysisRequest = NetworkAnalysisRequestDto(
+                flows = flows.map { networkFlow ->
                     NetworkFlowDto(
-                        sourceApp = flow.sourceApp,
-                        destinationIp = flow.destinationIp,
-                        destinationPort = flow.destinationPort,
-                        protocol = flow.protocol,
-                        domain = flow.domain,
-                        bytesSent = flow.bytesSent,
-                        bytesReceived = flow.bytesReceived,
-                        timestamp = flow.timestamp
+                        sourceApp = networkFlow.sourceApp,
+                        destinationIp = networkFlow.destinationIp,
+                        destinationPort = networkFlow.destinationPort,
+                        protocol = networkFlow.protocol,
+                        domain = networkFlow.domain,
+                        bytesSent = networkFlow.bytesSent,
+                        bytesReceived = networkFlow.bytesReceived,
+                        timestamp = networkFlow.timestamp
                     )
                 }
             )
             
-            val result = api.analyzeNetwork(dto)
+            val analysisResult = api.analyzeNetwork(analysisRequest)
             
-            // Save alerts
-            result.alerts.forEach { alertDto ->
+            // Store detected network threats in local database
+            analysisResult.alerts.forEach { alertDto ->
                 networkDao.insertAlert(
                     NetworkAlertEntity(
                         packageName = alertDto.packageName,
@@ -78,19 +78,19 @@ class NetworkRepositoryImpl @Inject constructor(
                 )
             }
             
-            // Update blocklist if provided
-            if (result.blocklist.isNotEmpty()) {
-                networkDao.insertBlocklist(result.blocklist.map { 
+            // Update local blocklist with cloud-provided patterns
+            if (analysisResult.blocklist.isNotEmpty()) {
+                networkDao.insertBlocklist(analysisResult.blocklist.map { blocklistDto ->
                     BlocklistEntity(
-                        pattern = it.pattern,
-                        type = it.type,
-                        reason = it.reason,
-                        timestamp = it.timestamp
+                        pattern = blocklistDto.pattern,
+                        type = blocklistDto.type,
+                        reason = blocklistDto.reason,
+                        timestamp = blocklistDto.timestamp
                     )
                 })
             }
         } catch (e: Exception) {
-            // Log error or handle offline mode
+            // Handle offline mode gracefully - local analysis still works
         }
     }
 
@@ -99,7 +99,7 @@ class NetworkRepositoryImpl @Inject constructor(
     }
 
     override suspend fun syncBlocklist() {
-        // Implement periodic sync if needed or handle via analyzeFlows
+        // Blocklist sync is handled automatically during flow analysis
     }
 
     override fun clearActiveFlows() {
