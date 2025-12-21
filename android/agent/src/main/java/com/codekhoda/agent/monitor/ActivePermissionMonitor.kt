@@ -36,7 +36,7 @@ class ActivePermissionMonitor @Inject constructor(
             AppOpsManager.OPSTR_COARSE_LOCATION
         )
 
-        val ops = appOpsWrapper.getRecentOps(1000, targetOps)
+        val ops = appOpsWrapper.getRecentOps(1000, monitoredOperations)
         
         val activeOp = ops.firstOrNull { it.isRunning }
         

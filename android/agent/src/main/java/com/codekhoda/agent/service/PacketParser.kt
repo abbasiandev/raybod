@@ -77,21 +77,21 @@ object PacketParser {
             position += 2
             val extensionsEnd = position + extensionsLength
             
-            while (pos < extensionsEnd && pos < payload.size) {
-                val extType = ((payload[pos].toInt() and 0xFF) shl 8) or (payload[pos+1].toInt() and 0xFF)
-                val extLen = ((payload[pos+2].toInt() and 0xFF) shl 8) or (payload[pos+3].toInt() and 0xFF)
-                pos += 4
+            while (position < extensionsEnd && position < payload.size) {
+                val extType = ((payload[position].toInt() and 0xFF) shl 8) or (payload[position+1].toInt() and 0xFF)
+                val extLen = ((payload[position+2].toInt() and 0xFF) shl 8) or (payload[position+3].toInt() and 0xFF)
+                position += 4
                 
                 if (extType == 0x0000) { // Server Name Extension
-                    val serverNameListLen = ((payload[pos].toInt() and 0xFF) shl 8) or (payload[pos+1].toInt() and 0xFF)
-                    pos += 2
-                    val serverNameType = payload[pos].toInt()
+                    val serverNameListLen = ((payload[position].toInt() and 0xFF) shl 8) or (payload[position+1].toInt() and 0xFF)
+                    position += 2
+                    val serverNameType = payload[position].toInt()
                     if (serverNameType == 0) { // host_name
-                        val nameLen = ((payload[pos+1].toInt() and 0xFF) shl 8) or (payload[pos+2].toInt() and 0xFF)
-                        return String(payload.sliceArray(pos + 3 until pos + 3 + nameLen))
+                        val nameLen = ((payload[position+1].toInt() and 0xFF) shl 8) or (payload[position+2].toInt() and 0xFF)
+                        return String(payload.sliceArray(position + 3 until position + 3 + nameLen))
                     }
                 }
-                pos += extLen
+                position += extLen
             }
         } catch (e: Exception) {
             return null
