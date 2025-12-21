@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Required to see other apps -->
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" 
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -23,7 +23,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HybridCloudSentinel"
         tools:targetApi="31">
-        
+
+        <!-- Disable default WorkManager initialization since we use custom Configuration.Provider -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -48,7 +60,7 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
-            <property 
+            <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Anti-malware real-time monitoring and protection service" />
         </service>
@@ -91,7 +103,7 @@
                 <action android:name="android.net.VpnService" />
             </intent-filter>
         </service>
-            
+
     </application>
 
 </manifest>

@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     # Package List URL
     PACKAGE_LIST_URL: str = "https://raw.githubusercontent.com/codekhoda/threat-intel/main/package_lists.json"
 
+    # JWT Configuration
+    JWT_SECRET: str = "your-secret-key-change-in-production-use-env-var"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 1440  # 24 hours
+
     class Config:
         env_file = ".env"
         extra = "ignore"

@@ -100,6 +100,8 @@ def init_db(seed=True):
                 "com.android.internal.systemui.navbar.twobutton", "com.android.internal.systemui.navbar.threebutton"
             ]
             fallback_blacklist = [
+                ("com.example.virus", "Known Malware"),
+                ("com.spyware.tracker", "Known Malware"),
                 ("com.gzrtnq.Bumble", "Malware"),
                 ("com.wondershare.famisafe.kids", "PUA"),
                 ("com.Android.core.mntac", "Stalkerware (Hoverwatch)"),

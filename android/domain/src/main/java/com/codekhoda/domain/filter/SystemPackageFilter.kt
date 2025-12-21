@@ -58,7 +58,6 @@ object SystemPackageFilter {
         "com.whatsapp",
         "com.skype.raider",
         "com.Slack",
-        "com.instagram.android",
         "jp.naver.line.android",
         "com.microsoft.office.outlook",
         "com.yahoo.mobile.client.android.mail",
