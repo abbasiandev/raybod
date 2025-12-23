@@ -8,7 +8,7 @@ from slowapi.errors import RateLimitExceeded
 import os
 import logging
 from app.core.config import settings
-from app.api.v1.endpoints import scan, auth, dashboard, allowlist, threats, reputation, devices, models, analytics, websocket, keys, public, billing, network
+from app.api.v1.endpoints import scan, auth, dashboard, allowlist, threats, reputation, devices, models, analytics, websocket, keys, public, billing, network, debug
 from app.core.database import init_db
 
 logger = logging.getLogger(__name__)
@@ -53,6 +53,7 @@ app.include_router(keys.router, prefix="/api/v1/keys", tags=["keys"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(billing.router, prefix="/dashboard/billing", tags=["billing"])
+app.include_router(debug.router, prefix="/dashboard", tags=["debug"])
 app.include_router(public.router, tags=["public"])
 
 @app.get("/health")

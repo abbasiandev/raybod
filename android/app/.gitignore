@@ -1,0 +1,9 @@
+# Release keystore - DO NOT COMMIT
+*.keystore
+*.jks
+release.keystore
+release.jks
+
+# Signing properties
+keystore.properties
+signing.properties

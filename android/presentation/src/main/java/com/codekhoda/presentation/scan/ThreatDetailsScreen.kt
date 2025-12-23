@@ -10,6 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -42,6 +45,7 @@ fun ThreatDetailsScreen(
     val state by viewModel.uiState.collectAsState()
     val assessment = state.results.find { it.packageName == packageName }
     val context = LocalContext.current
+    var showEducationSheet by remember { mutableStateOf(false) }
 
     val appIcon = remember(packageName) {
         try {
@@ -187,7 +191,29 @@ fun ThreatDetailsScreen(
                 ) {
                     // Detection Log
                     item {
-                        SectionHeader(title = "DETECTION LOG", icon = Icons.Default.List)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SectionHeader(title = "DETECTION LOG", icon = Icons.Default.List)
+                            if (assessment.riskLevel != RiskLevel.SAFE) {
+                                TextButton(onClick = { showEducationSheet = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Learn more",
+                                        tint = NeonCyan,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Learn More",
+                                        color = NeonCyan,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
                         GlassCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
@@ -272,6 +298,13 @@ fun ThreatDetailsScreen(
                     }
                 }
             }
+        }
+        
+        if (showEducationSheet) {
+            ThreatEducationBottomSheet(
+                threatType = assessment.threatType.ifEmpty { "Security Threat" },
+                onDismiss = { showEducationSheet = false }
+            )
         }
     }
 }

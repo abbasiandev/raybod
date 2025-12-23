@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Debug APK Analyzer{% endblock %}
+{% block page_title %}APK Debug Analyzer{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">🔬 Interactive APK Analysis</h3>
+        <p class="text-secondary mb-0">Test malware detection heuristics with custom inputs</p>
+    </div>
+    <div class="card-body">
+        <form id="debugForm" hx-post="/api/v1/scan/debug" hx-target="#results" hx-indicator="#loading">
+            <div class="form-group mb-3">
+                <label for="packageName" class="form-label">Package Name</label>
+                <input type="text" class="form-control" id="packageName" name="package_name" 
+                       placeholder="com.example.app" required>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="appSize" class="form-label">App Size (bytes)</label>
+                <input type="number" class="form-control" id="appSize" name="app_size" 
+                       placeholder="500000" value="500000">
+                <small class="text-muted">Try values under 500KB for size anomaly detection</small>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="form-label">Permissions (select multiple)</label>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.CAMERA" id="perm1">
+                            <label class="form-check-label" for="perm1">CAMERA</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.RECORD_AUDIO" id="perm2">
+                            <label class="form-check-label" for="perm2">RECORD_AUDIO</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.ACCESS_FINE_LOCATION" id="perm3">
+                            <label class="form-check-label" for="perm3">ACCESS_FINE_LOCATION</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.READ_SMS" id="perm4">
+                            <label class="form-check-label" for="perm4">READ_SMS</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.SEND_SMS" id="perm5">
+                            <label class="form-check-label" for="perm5">SEND_SMS</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.READ_EXTERNAL_STORAGE" id="perm6">
+                            <label class="form-check-label" for="perm6">READ_EXTERNAL_STORAGE</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.INTERNET" id="perm7">
+                            <label class="form-check-label" for="perm7">INTERNET</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.BIND_ACCESSIBILITY_SERVICE" id="perm8">
+                            <label class="form-check-label" for="perm8">BIND_ACCESSIBILITY_SERVICE ⚠️</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.BIND_DEVICE_ADMIN" id="perm9">
+                            <label class="form-check-label" for="perm9">BIND_DEVICE_ADMIN ⚠️</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.SYSTEM_ALERT_WINDOW" id="perm10">
+                            <label class="form-check-label" for="perm10">SYSTEM_ALERT_WINDOW ⚠️</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="android.permission.RECEIVE_BOOT_COMPLETED" id="perm11">
+                            <label class="form-check-label" for="perm11">RECEIVE_BOOT_COMPLETED</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="form-label">Intents (select multiple)</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="intents" value="android.intent.action.SENDTO" id="intent1">
+                            <label class="form-check-label" for="intent1">SENDTO</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="intents" value="android.provider.Telephony.SMS_RECEIVED" id="intent2">
+                            <label class="form-check-label" for="intent2">SMS_RECEIVED</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="intents" value="android.intent.action.VIEW" id="intent3">
+                            <label class="form-check-label" for="intent3">VIEW</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="intents" value="android.media.action.IMAGE_CAPTURE" id="intent4">
+                            <label class="form-check-label" for="intent4">IMAGE_CAPTURE</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="form-label">Advanced Options</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="has_reflection" value="true" id="reflection">
+                    <label class="form-check-label" for="reflection">Has Reflection</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="has_dynamic_loading" value="true" id="dynamic">
+                    <label class="form-check-label" for="dynamic">Has Dynamic Code Loading</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                🔍 Analyze App
+            </button>
+            <span id="loading" class="htmx-indicator ms-2">Analyzing...</span>
+        </form>
+    </div>
+</div>
+
+<div id="results" class="mt-3"></div>
+
+<div class="card mt-3">
+    <div class="card-header">
+        <h3 class="card-title">📚 Quick Test Scenarios</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-2">
+                <button class="btn btn-secondary w-100" onclick="loadScenario('safe')">
+                    ✅ Safe Navigation App
+                </button>
+            </div>
+            <div class="col-md-4 mb-2">
+                <button class="btn btn-warning w-100" onclick="loadScenario('spyware')">
+                    ⚠️ Potential Spyware
+                </button>
+            </div>
+            <div class="col-md-4 mb-2">
+                <button class="btn btn-danger w-100" onclick="loadScenario('trojan')">
+                    🚨 Banking Trojan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadScenario(type) {
+    // Clear all checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    
+    if (type === 'safe') {
+        document.getElementById('packageName').value = 'com.google.android.apps.maps';
+        document.getElementById('appSize').value = '80000000'; // 80MB
+        document.getElementById('perm3').checked = true; // LOCATION
+        document.getElementById('perm7').checked = true; // INTERNET
+    } else if (type === 'spyware') {
+        document.getElementById('packageName').value = 'com.suspicious.spyapp';
+        document.getElementById('appSize').value = '450000'; // 450KB
+        document.getElementById('perm1').checked = true; // CAMERA
+        document.getElementById('perm2').checked = true; // AUDIO
+        document.getElementById('perm3').checked = true; // LOCATION
+        document.getElementById('perm7').checked = true; // INTERNET
+    } else if (type === 'trojan') {
+        document.getElementById('packageName').value = 'com.malicious.bankapp';
+        document.getElementById('appSize').value = '300000'; // 300KB
+        document.getElementById('perm4').checked = true; // READ_SMS
+        document.getElementById('perm7').checked = true; // INTERNET
+        document.getElementById('perm8').checked = true; // ACCESSIBILITY
+        document.getElementById('perm9').checked = true; // DEVICE_ADMIN
+        document.getElementById('perm10').checked = true; // SYSTEM_ALERT
+    }
+}
+</script>
+{% endblock %}

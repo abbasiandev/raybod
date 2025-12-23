@@ -32,12 +32,19 @@ class BehaviorAnalysisEngine @Inject constructor() {
                     severity = 0.9f
                 ))
             }
-            // Rule 2: Foreground mismatch (User thinks they are in App A, but App B uses Camera)
-            // Note: This is subtle. If App B is using camera in foreground (wasInForeground=true),
-            // but the system says "currentForegroundApp" is App A, then App B might be an overlay or doing something tricky.
-            // However, our PermissionUsageEvent 'wasInForeground' comes from AppOpsManager, which is usually accurate about process state.
-            // If process was TOP, appOps says foreground.
-            // So we mainly rely on Rule 1 for now.
+            
+            // Rule 2: Foreground mismatch detection
+            if (currentForegroundApp.isNotEmpty() && 
+                event.wasInForeground && 
+                event.packageName != currentForegroundApp &&
+                isSensistiveSensor(event.permission)) {
+                anomalies.add(BehaviorAnomaly(
+                    packageName = event.packageName,
+                    anomalyType = AnomalyType.UNEXPECTED_BACKGROUND_ACCESS,
+                    description = "App ${event.packageName} accessed ${getSimplePermissionName(event.permission)} while user was in ${currentForegroundApp} (possible overlay attack)",
+                    severity = 0.95f
+                ))
+            }
         }
         
         return anomalies

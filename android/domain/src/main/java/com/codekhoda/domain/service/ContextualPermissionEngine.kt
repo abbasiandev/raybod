@@ -1,11 +1,5 @@
 package com.codekhoda.domain.service
 
-/**
- * Context-Aware Permission Analysis Engine.
- * 
- * Implements the mentor's key insight: "Permissions alone don't tell the story—context is everything."
- * Maps app categories to expected permissions and adjusts risk scores accordingly.
- */
 object ContextualPermissionEngine {
 
     // Score weights for context analysis
@@ -21,10 +15,12 @@ object ContextualPermissionEngine {
         PHOTO(listOf("camera", "photo", "gallery", "image", "pic", "selfie", "snap")),
         SOCIAL(listOf("social", "chat", "messenger", "whatsapp", "telegram", "instagram")),
         FINANCIAL(listOf("bank", "pay", "wallet", "finance", "money", "crypto", "payment")),
-        UTILITY(listOf("flashlight", "calculator", "clock", "alarm", "weather", "note")),
+        UTILITY(listOf("flashlight", "calculator", "clock", "alarm", "weather", "note", "tool")),
         COMMUNICATION(listOf("phone", "call", "sms", "message", "dialer", "contact")),
         MEDIA(listOf("music", "video", "player", "stream", "spotify", "youtube")),
         HEALTH(listOf("health", "fitness", "medical", "heart", "step", "workout")),
+        FILE_MANAGER(listOf("file", "explorer", "manager", "storage", "folder", "xplore", "es file", "solid explorer", "total commander")),
+        PRODUCTIVITY(listOf("office", "document", "pdf", "reader", "editor", "productivity", "work")),
         GAME(listOf("game", "play", "puzzle", "arcade", "adventure")),
         UNKNOWN(emptyList())
     }
@@ -59,7 +55,7 @@ object ContextualPermissionEngine {
             "android.permission.USE_FINGERPRINT"
         ),
         AppCategory.UTILITY to setOf(
-            "android.permission.CAMERA" // For flashlight control
+            "android.permission.CAMERA"
         ),
         AppCategory.COMMUNICATION to setOf(
             "android.permission.CALL_PHONE",
@@ -80,9 +76,25 @@ object ContextualPermissionEngine {
             "android.permission.ACTIVITY_RECOGNITION",
             "android.permission.ACCESS_FINE_LOCATION"
         ),
+        AppCategory.FILE_MANAGER to setOf(
+            "android.permission.READ_EXTERNAL_STORAGE",
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            "android.permission.MANAGE_EXTERNAL_STORAGE",
+            "android.permission.READ_MEDIA_IMAGES",
+            "android.permission.READ_MEDIA_VIDEO",
+            "android.permission.READ_MEDIA_AUDIO",
+            "android.permission.INTERNET"
+        ),
+        AppCategory.PRODUCTIVITY to setOf(
+            "android.permission.READ_EXTERNAL_STORAGE",
+            "android.permission.WRITE_EXTERNAL_STORAGE",
+            "android.permission.INTERNET"
+        ),
         AppCategory.GAME to setOf(
             "android.permission.INTERNET",
-            "android.permission.VIBRATE"
+            "android.permission.VIBRATE",
+            "android.permission.READ_EXTERNAL_STORAGE",
+            "android.permission.WRITE_EXTERNAL_STORAGE"
         ),
         AppCategory.UNKNOWN to emptySet()
     )

@@ -28,7 +28,6 @@ class ActivePermissionMonitor @Inject constructor(
      * Triggers visual overlay to alert user of active camera/microphone/location usage.
      */
     fun checkAndNotify() {
-        // Monitor critical permissions for real-time alerts
         val monitoredOperations = arrayOf(
             AppOpsManager.OPSTR_CAMERA,
             AppOpsManager.OPSTR_RECORD_AUDIO,
@@ -37,12 +36,9 @@ class ActivePermissionMonitor @Inject constructor(
         )
 
         val ops = appOpsWrapper.getRecentOps(1000, monitoredOperations)
-        
         val activeOp = ops.firstOrNull { it.isRunning }
         
         if (activeOp != null) {
-            // Map to Domain Event for Analysis
-            // Note: simpleOpData.op is an OPSTR (e.g. "android:camera").
             val permission = getPermissionFromOp(activeOp.op) ?: activeOp.op
             
             val event = PermissionUsageEvent(
@@ -53,9 +49,8 @@ class ActivePermissionMonitor @Inject constructor(
                 durationMs = activeOp.duration
             )
             
-            // Detect Anomalies (pass single event as list)
-            // currentForegroundApp is unknown ("") but Rule 1 doesn't need it.
-            val anomalies = behaviorAnalysisEngine.detectActivityMismatch("", listOf(event))
+            val currentForegroundApp = getCurrentForegroundApp()
+            val anomalies = behaviorAnalysisEngine.detectActivityMismatch(currentForegroundApp, listOf(event))
             val isSuspicious = anomalies.isNotEmpty()
 
             val intent = Intent(context, PermissionOverlayService::class.java).apply {
@@ -70,6 +65,20 @@ class ActivePermissionMonitor @Inject constructor(
                 action = PermissionOverlayService.ACTION_HIDE
             }
             context.startService(intent)
+        }
+    }
+    
+    private fun getCurrentForegroundApp(): String {
+        return try {
+            val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                activityManager.getRunningTasks(1).firstOrNull()?.topActivity?.packageName ?: ""
+            } else {
+                @Suppress("DEPRECATION")
+                activityManager.getRunningTasks(1).firstOrNull()?.topActivity?.packageName ?: ""
+            }
+        } catch (e: Exception) {
+            ""
         }
     }
 
