@@ -15,13 +15,16 @@ class TestSizeAnomaly:
         return HeuristicEngine()
 
     def test_small_app_with_dangerous_permissions_returns_high(self, heuristic_engine):
-        """Tiny app (<500KB) with dangerous permissions should be HIGH risk."""
+        """Tiny app (<2MB) with HIGH-RISK permissions (SMS) should be HIGH risk."""
         metadata = AppMetadata(
             package_name="com.tiny.spyware",
             version_code=1,
             signature="hash",
             app_size=100 * 1024,  # 100KB
-            permissions=["android.permission.CAMERA"]
+            permissions=[
+                "android.permission.SEND_SMS",
+                "android.permission.RECEIVE_SMS"  # Need 2+ high-risk perms
+            ]
         )
 
         result = heuristic_engine.analyze(metadata)
@@ -61,15 +64,15 @@ class TestSizeAnomaly:
         assert result.risk_level == RiskLevel.SAFE
 
     def test_multiple_dangerous_perms_in_small_app(self, heuristic_engine):
-        """Tiny app with multiple dangerous permissions should still be HIGH (or arguably CRITICAL, but rule sets logic)."""
+        """Tiny app with multiple HIGH-RISK permissions should be flagged."""
         metadata = AppMetadata(
             package_name="com.tiny.multispy",
             version_code=1,
             signature="hash",
             app_size=200 * 1024,  # 200KB
             permissions=[
-                "android.permission.CAMERA",
-                "android.permission.RECORD_AUDIO"
+                "android.permission.SEND_SMS",
+                "android.permission.READ_CALL_LOG"  # 2 high-risk permissions
             ]
         )
 
@@ -78,18 +81,18 @@ class TestSizeAnomaly:
         assert result.risk_level == RiskLevel.HIGH
         assert "SizeAnomaly" in result.heuristics_used
 
-    def test_size_exactly_500kb_should_be_safe(self, heuristic_engine):
-        """Boundary condition: 500KB (approx) check."""
-        # The logic is < 500,000
+    def test_size_exactly_2mb_should_be_safe(self, heuristic_engine):
+        """Boundary condition: 2MB (new threshold) check."""
+        # The logic is < 2,000,000 bytes (2MB)
         metadata = AppMetadata(
             package_name="com.boundary.test",
             version_code=1,
             signature="hash",
-            app_size=500_000,
+            app_size=2_000_000,  # Exactly 2MB
             permissions=["android.permission.CAMERA"]
         )
 
         result = heuristic_engine.analyze(metadata)
         
-        # 500,000 is not < 500,000, so valid
+        # 2,000,000 is not < 2,000,000, so should be SAFE
         assert result.risk_level == RiskLevel.SAFE

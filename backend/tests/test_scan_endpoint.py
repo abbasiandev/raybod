@@ -67,7 +67,7 @@ class TestScanAnalyzeEndpoint:
         assert data["threat_type"] == "Known Malware"
 
     def test_analyze_suspicious_permissions(self, client):
-        """App with many dangerous permissions should return HIGH risk."""
+        """App with 5+ dangerous permissions should return HIGH risk."""
         payload = {
             "package_name": "com.suspicious.app",
             "version_code": 1,
@@ -76,7 +76,8 @@ class TestScanAnalyzeEndpoint:
                 "android.permission.CAMERA",
                 "android.permission.RECORD_AUDIO",
                 "android.permission.ACCESS_FINE_LOCATION",
-                "android.permission.READ_SMS"
+                "android.permission.READ_SMS",
+                "android.permission.SEND_SMS"  # Need 5+ for HIGH risk
             ]
         }
 

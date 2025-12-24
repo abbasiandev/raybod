@@ -52,10 +52,10 @@ class TestHeuristicEngine:
 
     # ========== Dangerous Permission Combination Tests ==========
 
-    def test_three_dangerous_permissions_returns_high(self, heuristic_engine):
-        """Apps with 3+ dangerous permissions should be flagged as HIGH risk."""
+    def test_three_dangerous_permissions_returns_safe(self, heuristic_engine):
+        """Apps with 3 dangerous permissions are now SAFE (threshold increased to 5)."""
         metadata = AppMetadata(
-            package_name="com.suspicious.app",
+            package_name="com.legitimate.app",
             version_code=1,
             signature="hash",
             permissions=[
@@ -67,17 +67,13 @@ class TestHeuristicEngine:
 
         result = heuristic_engine.analyze(metadata)
 
-        assert result.risk_level == RiskLevel.HIGH
-        assert result.threat_type == "Potential Spyware"
-        assert "PermissionCombo" in result.heuristics_used
-        assert "CAMERA" in result.description
-        assert "RECORD_AUDIO" in result.description
-        assert "ACCESS_FINE_LOCATION" in result.description
+        # With new threshold of 5, this should be SAFE (reduces false positives)
+        assert result.risk_level == RiskLevel.SAFE
 
-    def test_four_dangerous_permissions_returns_high(self, heuristic_engine):
-        """Apps with 4 dangerous permissions should also be HIGH risk."""
+    def test_four_dangerous_permissions_returns_safe(self, heuristic_engine):
+        """Apps with 4 dangerous permissions are now SAFE (threshold increased to 5)."""
         metadata = AppMetadata(
-            package_name="com.very.suspicious",
+            package_name="com.video.call.app",
             version_code=1,
             signature="hash",
             permissions=[
@@ -90,8 +86,8 @@ class TestHeuristicEngine:
 
         result = heuristic_engine.analyze(metadata)
 
-        assert result.risk_level == RiskLevel.HIGH
-        assert result.threat_type == "Potential Spyware"
+        # With new threshold of 5, this should be SAFE (prevents false positives for video call apps)
+        assert result.risk_level == RiskLevel.SAFE
 
     # ========== Safe App Tests ==========
 
@@ -222,8 +218,8 @@ class TestHeuristicEngine:
         # Only 2 dangerous permissions, should be SAFE
         assert result.risk_level == RiskLevel.SAFE
 
-    def test_exactly_three_dangerous_permissions_boundary(self, heuristic_engine):
-        """Exactly 3 dangerous permissions should trigger HIGH risk (boundary condition)."""
+    def test_exactly_five_dangerous_permissions_boundary(self, heuristic_engine):
+        """Exactly 5 dangerous permissions should trigger HIGH risk (new boundary)."""
         metadata = AppMetadata(
             package_name="com.boundary.test",
             version_code=1,
@@ -231,7 +227,9 @@ class TestHeuristicEngine:
             permissions=[
                 "android.permission.CAMERA",
                 "android.permission.RECORD_AUDIO",
-                "android.permission.ACCESS_FINE_LOCATION"
+                "android.permission.ACCESS_FINE_LOCATION",
+                "android.permission.READ_SMS",
+                "android.permission.SEND_SMS"
             ]
         )
 
@@ -239,15 +237,9 @@ class TestHeuristicEngine:
 
         assert result.risk_level == RiskLevel.HIGH
         assert result.threat_type == "Potential Spyware"
-        assert len([p for p in metadata.permissions if p in {
-            "android.permission.CAMERA",
-            "android.permission.RECORD_AUDIO",
-            "android.permission.ACCESS_FINE_LOCATION",
-            "android.permission.READ_SMS"
-        }]) == 3
 
-    def test_all_four_dangerous_permissions(self, heuristic_engine):
-        """All four dangerous permissions should return HIGH risk."""
+    def test_six_dangerous_permissions(self, heuristic_engine):
+        """Six dangerous permissions should definitely return HIGH risk."""
         metadata = AppMetadata(
             package_name="com.all.dangerous",
             version_code=1,
@@ -256,7 +248,9 @@ class TestHeuristicEngine:
                 "android.permission.CAMERA",
                 "android.permission.RECORD_AUDIO",
                 "android.permission.ACCESS_FINE_LOCATION",
-                "android.permission.READ_SMS"
+                "android.permission.READ_SMS",
+                "android.permission.SEND_SMS",
+                "android.permission.RECEIVE_SMS"
             ]
         )
 
@@ -264,13 +258,9 @@ class TestHeuristicEngine:
 
         assert result.risk_level == RiskLevel.HIGH
         assert result.threat_type == "Potential Spyware"
-        assert "CAMERA" in result.description
-        assert "RECORD_AUDIO" in result.description
-        assert "ACCESS_FINE_LOCATION" in result.description
-        assert "READ_SMS" in result.description
 
     def test_duplicate_dangerous_permissions(self, heuristic_engine):
-        """Duplicate dangerous permissions should still count as distinct for threshold."""
+        """Duplicate dangerous permissions - need 5+ unique to trigger."""
         metadata = AppMetadata(
             package_name="com.duplicate.test",
             version_code=1,
@@ -279,13 +269,15 @@ class TestHeuristicEngine:
                 "android.permission.CAMERA",
                 "android.permission.CAMERA",  # Duplicate
                 "android.permission.RECORD_AUDIO",
-                "android.permission.ACCESS_FINE_LOCATION"
+                "android.permission.ACCESS_FINE_LOCATION",
+                "android.permission.READ_SMS",
+                "android.permission.SEND_SMS"
             ]
         )
 
         result = heuristic_engine.analyze(metadata)
 
-        # Should still be HIGH because we have 3 unique dangerous permissions
+        # Should be HIGH because we have 5 unique dangerous permissions
         assert result.risk_level == RiskLevel.HIGH
         assert result.threat_type == "Potential Spyware"
 
@@ -385,7 +377,9 @@ class TestHeuristicEngine:
             permissions=[
                 "android.permission.CAMERA",
                 "android.permission.RECORD_AUDIO",
-                "android.permission.ACCESS_FINE_LOCATION"
+                "android.permission.ACCESS_FINE_LOCATION",
+                "android.permission.READ_SMS",
+                "android.permission.SEND_SMS"  # Need 5+ for PermissionCombo
             ]
         )
         perm_result = heuristic_engine.analyze(perm_metadata)

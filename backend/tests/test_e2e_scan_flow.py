@@ -39,7 +39,8 @@ def test_full_scan_flow_with_websocket(client, db_session):
                 "android.permission.READ_SMS",
                 "android.permission.RECEIVE_SMS",
                 "android.permission.SEND_SMS",
-                "android.permission.INTERNET"
+                "android.permission.CAMERA",
+                "android.permission.ACCESS_FINE_LOCATION"  # Need 5+ for HIGH risk
             ]
         }
         
