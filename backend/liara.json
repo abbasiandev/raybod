@@ -2,7 +2,6 @@
   "app": "codekhoda-sentinel",
   "platform": "docker",
   "port": 8000,
-  "image": "codekhoda-sentinel-backend:latest",
   "disks": []
 }
 
