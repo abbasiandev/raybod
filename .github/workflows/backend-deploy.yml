@@ -57,7 +57,7 @@ jobs:
         env:
           LIARA_TOKEN: ${{ secrets.LIARA_API_TOKEN }}
         run: |
-          liara deploy --app codekhoda-sentinel --api-token="$LIARA_TOKEN" --detach
+          liara deploy --app codekhoda-sentinel --api-token $LIARA_TOKEN --detach
 
       - name: Wait for deployment
         run: sleep 30
