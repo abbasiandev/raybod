@@ -52,12 +52,17 @@ jobs:
         run: |
           npm install -g @liara/cli
 
+      - name: Login to Liara
+        env:
+          LIARA_EMAIL: ${{ secrets.LIARA_EMAIL }}
+          LIARA_PASSWORD: ${{ secrets.LIARA_PASSWORD }}
+        run: |
+          liara login --email "$LIARA_EMAIL" --password "$LIARA_PASSWORD"
+
       - name: Deploy to Liara
         working-directory: ./backend
-        env:
-          LIARA_TOKEN: ${{ secrets.LIARA_API_TOKEN }}
         run: |
-          liara deploy --app codekhoda-sentinel --api-token $LIARA_TOKEN --detach
+          liara deploy --app codekhoda-sentinel --detach
 
       - name: Wait for deployment
         run: sleep 30
