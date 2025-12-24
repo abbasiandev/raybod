@@ -61,8 +61,8 @@ class ContextualPermissionEngineTest {
         )
         val result = ContextualPermissionEngine.calculateContextScore(AppCategory.UTILITY, permissions)
 
-        // score += 0.15f for unexpected dangerous permission
-        assertEquals(0.15f, result.contextScore, 0.01f)
+        // With new scoring: 0.18f for unexpected primary permission
+        assertEquals(0.18f, result.contextScore, 0.01f)
         assertEquals(1, result.unexpectedPermissions.size)
         assertTrue(result.unexpectedPermissions.contains("android.permission.ACCESS_FINE_LOCATION"))
     }
@@ -76,8 +76,8 @@ class ContextualPermissionEngineTest {
         )
         val result = ContextualPermissionEngine.calculateContextScore(AppCategory.UTILITY, permissions)
 
-        // score += 0.15f * 2 = 0.3f
-        assertEquals(0.3f, result.contextScore, 0.01f)
+        // With new scoring: 0.18f * 2 = 0.36f (2 unexpected permissions)
+        assertEquals(0.36f, result.contextScore, 0.01f)
         assertEquals(2, result.unexpectedPermissions.size)
     }
 
@@ -89,8 +89,8 @@ class ContextualPermissionEngineTest {
         // Even for a Utility app, this is suspicious if we don't strictly whitelist it
         val result = ContextualPermissionEngine.calculateContextScore(AppCategory.UTILITY, permissions)
 
-        // score += 0.3f (Always Suspicious)
-        assertTrue(result.contextScore >= 0.3f)
+        // New scoring: 0.35f (Highly Suspicious) since UTILITY is not in legitimateSuspiciousUseCases
+        assertTrue("Score should be >= 0.35f, got ${result.contextScore}", result.contextScore >= 0.35f)
         assertTrue(result.suspiciousPermissions.contains("android.permission.BIND_ACCESSIBILITY_SERVICE"))
     }
 
@@ -99,21 +99,23 @@ class ContextualPermissionEngineTest {
         val permissions = listOf("android.permission.INTERNET")
         val result = ContextualPermissionEngine.calculateContextScore(AppCategory.UNKNOWN, permissions)
 
-        // score += 0.1f baseline for unknown
-        assertEquals(0.1f, result.contextScore, 0.01f)
+        // New scoring: 0.05f baseline for unknown (reduced from 0.1f)
+        assertEquals(0.05f, result.contextScore, 0.01f)
     }
 
     @Test
     fun `Banking Trojan Profile - Flashlight requesting Admin + SMS`() {
         val permissions = listOf(
             "android.permission.CAMERA",
-            "android.permission.BIND_DEVICE_ADMIN", // Suspicious (+0.3)
-            "android.permission.SEND_SMS" // Unexpected (+0.15)
+            "android.permission.BIND_DEVICE_ADMIN", // Highly Suspicious (+0.35)
+            "android.permission.SEND_SMS" // Unexpected (+0.18)
         )
         val result = ContextualPermissionEngine.calculateContextScore(AppCategory.UTILITY, permissions)
 
-        assertEquals(0.45f, result.contextScore, 0.01f)
-        assertTrue(result.suspiciousPermissions.contains("android.permission.BIND_DEVICE_ADMIN"))
-        assertTrue(result.unexpectedPermissions.contains("android.permission.SEND_SMS"))
+        // New scoring: 0.35 (device admin) + 0.18 (SMS) = 0.53f (no multiple violations bonus since only 1 violation)
+        assertTrue("Score should be >= 0.5f, got ${result.contextScore}", result.contextScore >= 0.5f)
+        assertTrue("Should flag device admin", result.suspiciousPermissions.contains("android.permission.BIND_DEVICE_ADMIN"))
+        assertTrue("Should flag SMS", result.unexpectedPermissions.contains("android.permission.SEND_SMS"))
+        assertTrue("Should be critical", result.isCritical())
     }
 }

@@ -102,8 +102,7 @@ The Cloud Brain is deployed and accessible at:
 | Component | Platform | Details |
 |-----------|----------|---------|
 | **Backend** | [Liara](https://liara.ir) | Docker container on free tier |
-| **Database** | PostgreSQL 16+ | Managed instance on Liara |
-| **Network** | Private network | Connects app and database internally |
+| **Database** | SQLite | Lightweight embedded database |
 | **Intel Source** | GitHub | Dynamic threat signatures (OTA) |
 
 ---
@@ -181,40 +180,46 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 1. **Install Liara CLI**:
    ```bash
    npm install -g @liara/cli
-   liara login
    ```
 
-2. **Create PostgreSQL Database**:
-   - Go to Liara Console -> Databases -> Create Database.
-   - Select **PostgreSQL** (version 16 recommended).
-   - Note the **Service Name** (e.g., `sentinel-db`).
-
-3. **Deploy Backend**:
+2. **Deploy Backend**:
    ```bash
    cd backend
    liara deploy --app codekhoda-sentinel --platform docker --port 8000
    ```
 
-4. **Configure Environment Variables**:
-   Liara requires the database connection string. You can find this in the Liara Console under your Database's "Connection Details".
-   
+   The deployment uses the Docker platform and will automatically build the image from the Dockerfile.
+
+3. **Configure Environment Variables** (Optional):
    ```bash
-   # Use the internal connection string for better performance and security
-   liara env set --app codekhoda-sentinel DATABASE_URL=postgresql://USER:PASSWORD@sentinel-db:5432/postgres
+   liara env set --app codekhoda-sentinel JWT_SECRET=your-secure-secret-key-here
+   liara env set --app codekhoda-sentinel DEBUG=false
    ```
 
-### Database Connection Issues?
+4. **Using GitHub Actions for CI/CD**:
+   - Add `LIARA_API_TOKEN` to your GitHub repository secrets
+   - Generate the token from Liara Console -> Account -> API Tokens
+   - The workflow will automatically deploy on push to `main` branch
 
-If you see `Database initialization failed` in your logs:
-1. Verify `DATABASE_URL` starts with `postgresql://` (the code automatically fixes `postgres://`).
-2. Ensure the database and app are in the same Liara project/network.
-3. Check if the database is still in "Creating" state.
+### Database Information
+
+The backend uses **SQLite** as an embedded database, which:
+- Requires no external database service
+- Stores data in a single file (`sentinel_brain.db`)
+- Is perfect for MVP and small-scale deployments
+- Automatically initializes on first startup
+
+For production with high traffic, consider migrating to PostgreSQL by:
+1. Adding `psycopg2-binary` to `requirements.txt`
+2. Setting `DATABASE_URL` environment variable to PostgreSQL connection string
+3. The code will automatically detect and use PostgreSQL
 
 ### Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://root:xxx@sentinel-db:5432/postgres` |
+| `DATABASE_URL` | Database connection string | `sqlite:///./sentinel_brain.db` (default) |
+| `JWT_SECRET` | Secret key for JWT tokens | `your-secret-key-change-in-production` |
 | `DEBUG` | Enable debug mode | `false` |
 | `SKIP_INIT_DB` | Skip database seeding on startup | `0` |
 

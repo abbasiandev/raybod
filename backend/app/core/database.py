@@ -14,16 +14,9 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL = settings.DATABASE_URL
 
-# For SQLAlchemy, we need to ensure the URL starts with "postgresql://" not "postgres://"
-if DATABASE_URL.startswith("postgres://"):
-    logger.info("Converting postgres:// to postgresql:// in DATABASE_URL")
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
 # Debug: Log database type (safely)
 if DATABASE_URL.startswith("sqlite"):
     logger.info("Using SQLite database")
-elif DATABASE_URL.startswith("postgresql"):
-    logger.info("Using PostgreSQL database")
 else:
     logger.warning(f"Using unknown database type: {DATABASE_URL.split(':', 1)[0]}")
 

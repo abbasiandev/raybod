@@ -3,7 +3,7 @@ Authentication API endpoints.
 """
 from fastapi import APIRouter, HTTPException, Depends, Response, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from typing import Optional
 
@@ -57,8 +57,8 @@ async def login(
     Authenticate user and return JWT token.
     Sets token in HTTP-only cookie for browser clients.
     """
-    # Find user
-    user = db.query(User).filter(User.username == form_data.username).first()
+    # Find user with role relationship loaded
+    user = db.query(User).options(joinedload(User.role)).filter(User.username == form_data.username).first()
     
     if not user:
         raise HTTPException(
@@ -78,6 +78,13 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User account is inactive"
+        )
+    
+    # Ensure role is loaded
+    if not user.role:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="User role not configured"
         )
     
     # Create token
@@ -110,7 +117,7 @@ async def login(
     return LoginResponse(
         access_token=token,
         username=user.username,
-        role=user.role.name
+        role=user.role.name if user.role else "unknown"
     )
 
 

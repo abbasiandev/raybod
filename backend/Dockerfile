@@ -2,10 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies for weasyprint and psycopg2
+# Install system dependencies for weasyprint
 RUN apt-get update && apt-get install -y \
     gcc \
-    libpq-dev \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libgdk-pixbuf-2.0-0 \

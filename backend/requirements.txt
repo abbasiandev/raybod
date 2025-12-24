@@ -15,7 +15,6 @@ httpx==0.26.0
 slowapi==0.1.9
 sqlalchemy==2.0.25
 aiosqlite==0.19.0
-psycopg2-binary==2.9.9
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0

@@ -49,21 +49,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Liara CLI
-        run: |
-          npm install -g @liara/cli
-
-      - name: Login to Liara
-        env:
-          LIARA_EMAIL: ${{ secrets.LIARA_EMAIL }}
-          LIARA_PASSWORD: ${{ secrets.LIARA_PASSWORD }}
-        run: |
-          liara login --email "$LIARA_EMAIL" --password "$LIARA_PASSWORD"
-
       - name: Deploy to Liara
         working-directory: ./backend
+        env:
+          LIARA_API_TOKEN: ${{ secrets.LIARA_API_TOKEN }}
         run: |
-          liara deploy --app codekhoda-sentinel --detach
+          # Install Liara CLI
+          npm install -g @liara/cli
+          
+          # Deploy using API token
+          liara deploy --api-token="$LIARA_API_TOKEN" --app=codekhoda-sentinel --port=8000 --platform=docker --detach
 
       - name: Wait for deployment
         run: sleep 30

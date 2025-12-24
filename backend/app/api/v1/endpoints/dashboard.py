@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, Request, Depends, Form, HTTPException, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 import json
 
@@ -34,7 +34,7 @@ def get_optional_user(request: Request, db: Session = Depends(get_db)) -> Option
         payload = verify_token(token)
         user_id = payload.get("user_id")
         if user_id:
-            return db.query(User).filter(User.id == user_id).first()
+            return db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
     except:
         pass
     return None
@@ -84,7 +84,7 @@ async def login_submit(
     db: Session = Depends(get_db)
 ):
     """Handle login form submission."""
-    user = db.query(User).filter(User.username == username).first()
+    user = db.query(User).options(joinedload(User.role)).filter(User.username == username).first()
     
     if not user or not verify_password(password, user.hashed_password):
         return templates.TemplateResponse("login.html", {
@@ -99,6 +99,14 @@ async def login_submit(
             "current_user": None,
             "error": "Account is inactive"
         }, status_code=401)
+    
+    # Ensure role is loaded and handle None case
+    if not user.role:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "current_user": None,
+            "error": "User role not configured. Please contact administrator."
+        }, status_code=500)
     
     token = create_access_token(
         user_id=user.id,
@@ -119,8 +127,8 @@ async def login_submit(
 
 @router.get("/logout")
 async def logout(response: Response):
-    """Handle logout."""
-    redirect = RedirectResponse(url="/dashboard/login", status_code=302)
+    """Handle logout and redirect to home page."""
+    redirect = RedirectResponse(url="/", status_code=302)
     redirect.delete_cookie(key="access_token")
     return redirect
 
