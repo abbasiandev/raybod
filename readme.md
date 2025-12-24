@@ -89,12 +89,12 @@ The Cloud Brain is deployed and accessible at:
 
 | Endpoint | URL |
 |----------|-----|
-| **Landing Page** | https://codekhoda-sentinel-brain.liara.run/ |
-| **Admin Dashboard** | https://codekhoda-sentinel-brain.liara.run/dashboard/ |
-| **Login Page** | https://codekhoda-sentinel-brain.liara.run/dashboard/login |
-| **Health Check** | https://codekhoda-sentinel-brain.liara.run/health |
-| **API Documentation** | https://codekhoda-sentinel-brain.liara.run/docs |
-| **Scan Endpoint** | https://codekhoda-sentinel-brain.liara.run/api/v1/scan/analyze |
+| **Landing Page** | https://codekhoda-sentinel.liara.run/ |
+| **Admin Dashboard** | https://codekhoda-sentinel.liara.run/dashboard/ |
+| **Login Page** | https://codekhoda-sentinel.liara.run/dashboard/login |
+| **Health Check** | https://codekhoda-sentinel.liara.run/health |
+| **API Documentation** | https://codekhoda-sentinel.liara.run/docs |
+| **Scan Endpoint** | https://codekhoda-sentinel.liara.run/api/v1/scan/analyze |
 | **Threat Intel (Web)**| [Package Lists JSON](https://raw.githubusercontent.com/codekhoda/threat-intel/main/package_lists.json) |
 
 ### Infrastructure
@@ -129,7 +129,7 @@ We utilize a multi-layered approach to threat detection:
 
 ### Option A: Use Live Backend (Recommended)
 
-The Android app is pre-configured to use the live Liara backend at `https://codekhoda-sentinel-brain.liara.run`. Simply:
+The Android app is pre-configured to use the live Liara backend at `https://codekhoda-sentinel.liara.run`. Simply:
 
 1. Clone the repository
 2. Open `android/` in Android Studio
@@ -155,8 +155,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 *Local Server runs at `http://127.0.0.1:8000`*  
-*Production API available at `https://codekhoda-sentinel-brain.liara.run`*  
-*API Documentation: [Local](http://127.0.0.1:8000/docs) | [Production](https://codekhoda-sentinel-brain.liara.run/docs)*
+*Production API available at `https://codekhoda-sentinel.liara.run`*  
+*API Documentation: [Local](http://127.0.0.1:8000/docs) | [Production](https://codekhoda-sentinel.liara.run/docs)*
 
 #### 3. Configure Android for Local Backend
 
@@ -169,7 +169,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    cloud.brain.url=http://10.0.2.2:8000
    
    # For production (Liara):
-   # cloud.brain.url=https://codekhoda-sentinel-brain.liara.run
+   # cloud.brain.url=https://codekhoda-sentinel.liara.run
    ```
 
 ---
@@ -192,7 +192,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 3. **Deploy Backend**:
    ```bash
    cd backend
-   liara deploy --app codekhoda-sentinel-brain --platform docker --port 8000
+   liara deploy --app codekhoda-sentinel --platform docker --port 8000
    ```
 
 4. **Configure Environment Variables**:
@@ -200,7 +200,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    
    ```bash
    # Use the internal connection string for better performance and security
-   liara env set --app codekhoda-sentinel-brain DATABASE_URL=postgresql://USER:PASSWORD@sentinel-db:5432/postgres
+   liara env set --app codekhoda-sentinel DATABASE_URL=postgresql://USER:PASSWORD@sentinel-db:5432/postgres
    ```
 
 ### Database Connection Issues?

@@ -21,7 +21,7 @@ class ThreatWebSocketClient @Inject constructor(
         if (webSocket != null) return
 
         val request = Request.Builder()
-            .url("wss://codekhoda-sentinel-brain.liara.run/ws/threats")
+            .url("wss://codekhoda-sentinel.liara.run/ws/threats")
             .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {

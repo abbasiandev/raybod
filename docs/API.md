@@ -34,7 +34,7 @@ The Cloud Brain API is a RESTful service that accepts app metadata from Android 
 |-------------|-----|
 | **Local Development** | `http://localhost:8000` |
 | **Docker** | `http://host.docker.internal:8000` |
-| **Production** | `https://codekhoda-sentinel-brain.liara.run` |
+| **Production** | `https://codekhoda-sentinel.liara.run` |
 
 ### API Versioning
 
@@ -259,6 +259,6 @@ interface CloudBrainApi {
 
 Access interactive API documentation:
 
-- **Swagger UI**: `https://codekhoda-sentinel-brain.liara.run/docs` (or `http://localhost:8000/docs`)
-- **ReDoc**: `https://codekhoda-sentinel-brain.liara.run/redoc` (or `http://localhost:8000/redoc`)
-- **OpenAPI JSON**: `https://codekhoda-sentinel-brain.liara.run/openapi.json` (or `http://localhost:8000/openapi.json`)
+- **Swagger UI**: `https://codekhoda-sentinel.liara.run/docs` (or `http://localhost:8000/docs`)
+- **ReDoc**: `https://codekhoda-sentinel.liara.run/redoc` (or `http://localhost:8000/redoc`)
+- **OpenAPI JSON**: `https://codekhoda-sentinel.liara.run/openapi.json` (or `http://localhost:8000/openapi.json`)
