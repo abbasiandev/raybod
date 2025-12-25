@@ -31,13 +31,67 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Use startup event to avoid blocking app startup if DB is temporarily unavailable
 @app.on_event("startup")
 def startup_event():
+    """Enhanced startup with detailed logging for Liara debugging."""
+    logger.info("="*60)
+    logger.info("APPLICATION STARTUP - DIAGNOSTICS")
+    logger.info("="*60)
+    
+    # Check environment
+    logger.info(f"Environment Variables:")
+    logger.info(f"  DATABASE_URL: {settings.DATABASE_URL}")
+    logger.info(f"  JWT_SECRET set: {bool(settings.JWT_SECRET and len(settings.JWT_SECRET) > 20)}")
+    logger.info(f"  DEBUG: {settings.DEBUG}")
+    logger.info(f"  PORT: {settings.PORT}")
+    logger.info(f"  HOST: {settings.HOST}")
+    
+    # Check directories
+    logger.info(f"Directory Check:")
+    template_exists = os.path.exists('app/templates')
+    static_exists = os.path.exists('app/static')
+    logger.info(f"  app/templates exists: {template_exists}")
+    logger.info(f"  app/static exists: {static_exists}")
+    
+    if template_exists:
+        try:
+            templates = os.listdir('app/templates')
+            logger.info(f"  Templates: {templates}")
+        except Exception as e:
+            logger.error(f"  Error listing templates: {e}")
+    
+    if static_exists:
+        try:
+            static_files = os.listdir('app/static')
+            logger.info(f"  Static folders: {static_files}")
+        except Exception as e:
+            logger.error(f"  Error listing static files: {e}")
+    
     if os.getenv("SKIP_INIT_DB") != "1":
         try:
             init_db()
-            logger.info("Database initialized successfully")
+            logger.info("✓ Database initialized successfully")
+            
+            # Check if admin user exists
+            from app.core.database import SessionLocal
+            from app.models.user import User
+            db = SessionLocal()
+            try:
+                admin = db.query(User).filter(User.username == "admin").first()
+                if admin:
+                    logger.info(f"✓ Admin user found (active={admin.is_active})")
+                else:
+                    logger.warning("⚠ Admin user NOT found - first login will fail")
+            finally:
+                db.close()
+            
         except Exception as e:
-            logger.error(f"Database initialization failed: {e}")
+            logger.error(f"✗ Database initialization failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             # Don't crash the app - it will retry on first request
+    
+    logger.info("="*60)
+    logger.info("STARTUP COMPLETE")
+    logger.info("="*60)
 
 # Include routers
 app.include_router(scan.router, prefix="/api/v1/scan", tags=["scan"])
@@ -58,7 +112,44 @@ app.include_router(public.router, tags=["public"])
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "Hybrid Cloud Sentinel Brain"}
+    """Health check endpoint with diagnostic info."""
+    return {
+        "status": "healthy",
+        "service": "Hybrid Cloud Sentinel Brain",
+        "debug": settings.DEBUG,
+        "templates_exist": os.path.exists('app/templates'),
+        "static_exist": os.path.exists('app/static'),
+        "jwt_configured": bool(settings.JWT_SECRET and len(settings.JWT_SECRET) > 20)
+    }
+
+# Enhanced error handler for debugging
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all unhandled exceptions and log them."""
+    logger.error(f"Unhandled exception on {request.url}")
+    logger.error(f"Exception type: {type(exc).__name__}")
+    logger.error(f"Exception message: {str(exc)}")
+    logger.error(f"Traceback:\n{traceback.format_exc()}")
+    
+    # In production, don't expose internal errors
+    if settings.DEBUG:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Internal Server Error",
+                "detail": str(exc),
+                "type": type(exc).__name__,
+                "path": str(request.url)
+            }
+        )
+    else:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal Server Error", "path": str(request.url)}
+        )
 
 if __name__ == "__main__":
     import uvicorn

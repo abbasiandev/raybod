@@ -2,7 +2,12 @@
   "app": "codekhoda-sentinel",
   "platform": "docker",
   "port": 8000,
-  "disks": []
+  "disks": [
+    {
+      "name": "sentinel-data",
+      "mountTo": "/data"
+    }
+  ]
 }
 
 

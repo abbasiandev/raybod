@@ -12,15 +12,15 @@ services:
       - DEBUG=True
       - PORT=8000
       - HOST=0.0.0.0
-      - DATABASE_URL=sqlite:///./sentinel_brain.db
+      - DATABASE_URL=sqlite:////data/sentinel_brain.db
       - JWT_SECRET=test-secret-key-for-local-testing
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRE_MINUTES=1440
     volumes:
       # Mount the app directory for live code updates during testing
       - ./app:/app/app:ro
-      # Mount a volume for the database so it persists between restarts
-      - sentinel_db:/app
+      # Mount a volume for the database so it persists between restarts (simulates Liara disk)
+      - sentinel_db:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
