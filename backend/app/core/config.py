@@ -9,8 +9,12 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     
     # Database
-    # Use /data directory for persistent storage in Liara
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:////data/sentinel_brain.db")
+    # Use /data directory for persistent storage in Liara (if it exists)
+    # Otherwise use current directory for local development/testing
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL", 
+        "sqlite:////data/sentinel_brain.db" if os.path.exists("/data") else "sqlite:///./sentinel_brain.db"
+    )
     
     # Package List URL
     PACKAGE_LIST_URL: str = "https://raw.githubusercontent.com/codekhoda/threat-intel/main/package_lists.json"
