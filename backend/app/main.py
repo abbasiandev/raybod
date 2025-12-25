@@ -36,6 +36,21 @@ def startup_event():
     logger.info("APPLICATION STARTUP - DIAGNOSTICS")
     logger.info("="*60)
     
+    # Check /data directory
+    logger.info(f"Storage Directory Check:")
+    data_exists = os.path.exists("/data")
+    logger.info(f"  /data exists: {data_exists}")
+    if data_exists:
+        try:
+            # Check if writable
+            test_file = "/data/.write_test"
+            with open(test_file, "w") as f:
+                f.write("test")
+            os.remove(test_file)
+            logger.info(f"  /data is WRITABLE ✓")
+        except Exception as e:
+            logger.error(f"  /data is NOT writable: {e}")
+    
     # Check environment
     logger.info(f"Environment Variables:")
     logger.info(f"  DATABASE_URL: {settings.DATABASE_URL}")

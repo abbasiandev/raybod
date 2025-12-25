@@ -19,8 +19,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app ./app
 
+# Copy and setup entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Create /data directory with proper permissions (will be overridden by Liara mount)
+# This ensures the directory exists even if mount fails
+RUN mkdir -p /data && chmod 777 /data
+
 # Expose port - Liara will use the PORT environment variable
 EXPOSE 8000
 
-# Run the application using PORT environment variable from Liara
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Use entrypoint script for proper initialization
+ENTRYPOINT ["/entrypoint.sh"]
