@@ -9,11 +9,12 @@ from app.models.scan_log import ScanLog
 from app.api.v1.endpoints.websocket import manager
 from slowapi.errors import RateLimitExceeded
 import json
+import os
 
 router = APIRouter()
 
-# Rate limiting configuration
-RATE_LIMIT_PER_MINUTE = "10/minute"
+# Rate limiting configuration (full device scans can report 100+ apps)
+RATE_LIMIT_PER_MINUTE = os.getenv("SCAN_RATE_LIMIT", "120/minute")
 
 @router.post("/analyze", response_model=ScanResult)
 async def analyze_app(

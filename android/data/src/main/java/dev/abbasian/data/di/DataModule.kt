@@ -68,12 +68,15 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): okhttp3.OkHttpClient {
+    fun provideOkHttpClient(
+        deviceIdInterceptor: dev.abbasian.data.remote.interceptor.DeviceIdInterceptor
+    ): okhttp3.OkHttpClient {
         val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
             level = okhttp3.logging.HttpLoggingInterceptor.Level.BASIC
         }
         
         return okhttp3.OkHttpClient.Builder()
+            .addInterceptor(deviceIdInterceptor)
             .addInterceptor(logging)
             .addInterceptor(dev.abbasian.data.remote.interceptor.RetryInterceptor(maxRetries = 3))
             .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)

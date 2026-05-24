@@ -47,6 +47,13 @@ class ThreatRepositoryImplTest {
         val appPackage = AppPackage(packageName, 1, signature = "hash")
 
         coEvery { riskDao.getRisk(packageName) } returns cachedEntity
+        coEvery { api.analyzeApp(any()) } returns ScanResultDto(
+            packageName = packageName,
+            riskLevel = "SAFE",
+            threatType = "",
+            description = "Cloud sync",
+            heuristicsUsed = emptyList()
+        )
 
         // When
         val result = repository.scanApp(appPackage)
@@ -55,11 +62,11 @@ class ThreatRepositoryImplTest {
         assertEquals(RiskLevel.SAFE, result.riskLevel)
         assertEquals("Cached result", result.description)
         coVerify(exactly = 0) { malwareScanner.scan(any()) }
-        coVerify(exactly = 0) { api.analyzeApp(any()) }
+        coVerify(exactly = 1) { api.analyzeApp(any()) }
     }
 
     @Test
-    fun `returns local AI result immediately for CRITICAL threats and marks as LOCAL_ONLY`() = runBlocking {
+    fun `returns local AI result for CRITICAL threats and still reports to cloud`() = runBlocking {
         // Given
         val packageName = "com.malware.critical"
         val appPackage = AppPackage(
@@ -77,14 +84,21 @@ class ThreatRepositoryImplTest {
 
         coEvery { riskDao.getRisk(packageName) } returns null
         coEvery { malwareScanner.scan(appPackage) } returns criticalAssessment
+        coEvery { api.analyzeApp(any()) } returns ScanResultDto(
+            packageName = packageName,
+            riskLevel = "SAFE",
+            threatType = "",
+            description = "Cloud says safe",
+            heuristicsUsed = emptyList()
+        )
 
         // When
         val result = repository.scanApp(appPackage)
 
         // Then
         assertEquals(RiskLevel.CRITICAL, result.riskLevel)
-        coVerify(exactly = 0) { api.analyzeApp(any()) } // Cloud not called for CRITICAL
-        coVerify { riskDao.insertRisk(match { it.syncStatus == "LOCAL_ONLY" }) } // Result cached as LOCAL_ONLY
+        coVerify(exactly = 1) { api.analyzeApp(any()) }
+        coVerify { riskDao.insertRisk(match { it.syncStatus == "SYNCED" && it.riskLevel == "CRITICAL" }) }
     }
 
     @Test
@@ -198,6 +212,13 @@ class ThreatRepositoryImplTest {
                 threatType = "",
                 description = "Cached",
                 timestamp = 0L
+            )
+            coEvery { api.analyzeApp(any()) } returns ScanResultDto(
+                packageName = pkg.packageName,
+                riskLevel = "SAFE",
+                threatType = "",
+                description = "Cloud sync",
+                heuristicsUsed = emptyList()
             )
         }
 

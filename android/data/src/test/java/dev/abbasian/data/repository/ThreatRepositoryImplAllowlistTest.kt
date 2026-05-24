@@ -4,6 +4,7 @@ import dev.abbasian.data.local.dao.RiskDao
 import dev.abbasian.data.ml.MalwareScanner
 import dev.abbasian.data.remote.api.CloudBrainApi
 import dev.abbasian.data.remote.dto.AllowlistCheckDto
+import dev.abbasian.data.remote.dto.ScanResultDto
 import dev.abbasian.domain.model.AppPackage
 import dev.abbasian.domain.model.RiskAssessment
 import dev.abbasian.domain.model.RiskLevel
@@ -42,6 +43,13 @@ class ThreatRepositoryImplAllowlistTest {
         coEvery { api.checkAllowlist("com.android.chrome") } returns 
             AllowlistCheckDto("com.android.chrome", isAllowed = true)
         coEvery { riskDao.getRisk(any()) } returns null
+        coEvery { api.analyzeApp(any()) } returns ScanResultDto(
+            packageName = "com.android.chrome",
+            riskLevel = "SAFE",
+            threatType = "",
+            description = "Cloud sync",
+            heuristicsUsed = emptyList()
+        )
 
         // When
         val result = repository.scanApp(appPackage, lowSpeedMode = false)
@@ -50,7 +58,7 @@ class ThreatRepositoryImplAllowlistTest {
         assertEquals(RiskLevel.SAFE, result.riskLevel)
         assertEquals("Verified Safe via Global Cloud Allowlist", result.description)
         coVerify(exactly = 0) { malwareScanner.scan(any()) }
-        coVerify(exactly = 0) { api.analyzeApp(any()) }
+        coVerify(exactly = 1) { api.analyzeApp(any()) }
     }
 }
 
