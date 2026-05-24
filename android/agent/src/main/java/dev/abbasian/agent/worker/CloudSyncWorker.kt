@@ -20,10 +20,10 @@ class CloudSyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): WorkerResult {
-        val packageNames = workerParams.inputData
+        val packageNames = inputData
             .getString(CloudSyncScheduler.KEY_PACKAGE_NAMES)
             ?.split(",")
-            ?.filter { it.isNotBlank() }
+            ?.filter { name -> name.isNotBlank() }
             ?: emptyList()
 
         if (packageNames.isEmpty()) {

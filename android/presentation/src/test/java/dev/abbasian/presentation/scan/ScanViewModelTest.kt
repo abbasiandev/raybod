@@ -13,7 +13,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.eq
 import io.mockk.every
-import io.mockk.firstArg
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
@@ -63,7 +62,7 @@ class ScanViewModelTest {
         every { userPrefs.dailyScanCount } returns flowOf(0)
         coEvery { userPrefs.setLastScanTimestamp(any()) } returns Unit
         coEvery { userPrefs.setDailyScanCount(any()) } returns Unit
-        coEvery { syncScanLogsUseCase(any()) } answers { firstArg<List<AppPackage>>().size }
+        coEvery { syncScanLogsUseCase(any()) } returns 1000
 
         viewModel = ScanViewModel(appContext, scanAppUseCase, syncScanLogsUseCase, packageAnalyzer, userPrefs)
     }
