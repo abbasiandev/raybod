@@ -12,13 +12,9 @@ import java.net.URLEncoder
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
-/**
- * Android rejects hostnames with underscores via IDN.toASCII (STD3 rules).
- * JustRunMy URLs like gitr_g6pdx-727.b.jrnm.app fail on device but work from curl on Mac.
- * Underscore hosts skip system DNS and resolve via public DNS JSON APIs instead.
- */
 object NetworkDns {
     private const val TAG = "RaybodCloud"
+    private val IP_LITERAL = Regex("""^\d{1,3}(\.\d{1,3}){3}$""")
 
     private val systemDns: Dns = Dns.SYSTEM
     private val bootstrapClient = OkHttpClient.Builder()
@@ -28,31 +24,25 @@ object NetworkDns {
 
     val preferIpv4: Dns = object : Dns {
         override fun lookup(hostname: String): List<InetAddress> {
-            val addresses = resolveHostname(hostname)
+            if (IP_LITERAL.matches(hostname)) {
+                return listOf(InetAddress.getByName(hostname))
+            }
+            if (hostname.contains('_')) {
+                return lookupPublicIpv4(hostname)
+            }
+            val addresses = systemDns.lookup(hostname)
             val ipv4 = addresses.filter { it is Inet4Address }
             return if (ipv4.isNotEmpty()) ipv4 else addresses
         }
     }
 
-    private fun resolveHostname(hostname: String): List<InetAddress> {
-        if (hostname.contains('_')) {
-            Log.i(TAG, "Resolving underscore hostname via public DNS: $hostname")
-            return resolveViaPublicDns(hostname)
-        }
-        return systemDns.lookup(hostname)
-    }
-
-    private fun resolveViaPublicDns(hostname: String): List<InetAddress> {
+    fun lookupPublicIpv4(hostname: String): List<InetAddress> {
+        Log.i(TAG, "Public DNS lookup for: $hostname")
         return try {
             queryDnsJson("https://dns.google/resolve", hostname)
         } catch (googleError: Exception) {
-            Log.w(TAG, "Google DNS lookup failed for $hostname: ${googleError.message}")
-            try {
-                queryDnsJson("https://cloudflare-dns.com/dns-query", hostname)
-            } catch (cloudflareError: Exception) {
-                Log.e(TAG, "Cloudflare DNS lookup failed for $hostname: ${cloudflareError.message}")
-                throw UnknownHostException(hostname)
-            }
+            Log.w(TAG, "Google DNS failed for $hostname: ${googleError.message}")
+            queryDnsJson("https://cloudflare-dns.com/dns-query", hostname)
         }
     }
 
@@ -81,8 +71,8 @@ object NetworkDns {
             if (addresses.isEmpty()) {
                 throw UnknownHostException("$hostname (no A records)")
             }
-            Log.i(TAG, "Resolved $hostname -> ${addresses.first().hostAddress}")
-            return addresses
+            Log.i(TAG, "Resolved $hostname -> ${addresses.joinToString { it.hostAddress ?: "?" }}")
+            return addresses.filterIsInstance<Inet4Address>().ifEmpty { addresses }
         }
     }
 }

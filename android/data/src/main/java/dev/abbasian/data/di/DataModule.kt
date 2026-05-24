@@ -16,7 +16,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.abbasian.data.remote.BackendEndpoint
+import dev.abbasian.data.remote.interceptor.HostOverrideInterceptor
 import javax.inject.Singleton
+import javax.net.ssl.HttpsURLConnection
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -76,9 +79,17 @@ object DataModule {
         val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
             level = okhttp3.logging.HttpLoggingInterceptor.Level.BASIC
         }
-        
+
+        // Resolve backend IP early so Retrofit never passes underscore hostname to OkHttp.
+        BackendEndpoint.ipv4()
+
         return okhttp3.OkHttpClient.Builder()
             .dns(dev.abbasian.data.remote.NetworkDns.preferIpv4)
+            .hostnameVerifier { _, session ->
+                HttpsURLConnection.getDefaultHostnameVerifier()
+                    .verify(BackendEndpoint.HOST, session)
+            }
+            .addInterceptor(HostOverrideInterceptor(BackendEndpoint.HOST))
             .addInterceptor(deviceIdInterceptor)
             .addInterceptor(logging)
             .addInterceptor(dev.abbasian.data.remote.interceptor.RetryInterceptor(maxRetries = 3))
@@ -92,7 +103,7 @@ object DataModule {
     @Singleton
     fun provideRetrofit(okHttpClient: okhttp3.OkHttpClient): retrofit2.Retrofit {
         return retrofit2.Retrofit.Builder()
-            .baseUrl("https://gitr_g6pdx-727.b.jrnm.app/")
+            .baseUrl(BackendEndpoint.httpsBaseUrl())
             .client(okHttpClient)
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()
