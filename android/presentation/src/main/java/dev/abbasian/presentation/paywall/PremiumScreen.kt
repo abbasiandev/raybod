@@ -229,7 +229,7 @@ fun PremiumScreen(
         Spacer(modifier = Modifier.height(32.dp))
         
         Text(
-            "© 2025 CodeKhoda Security Lab",
+            "© 2025 Raybod",
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary,
             textAlign = TextAlign.Center

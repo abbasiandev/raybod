@@ -21,6 +21,8 @@ material = "1.11.0"
 tensorflowLite = "2.14.0"
 work = "2.9.0"
 navigation = "2.7.7"
+sentry = "8.12.0"
+sentryGradle = "4.14.1"
 
 
 [libraries]
@@ -82,9 +84,11 @@ robolectric = { group = "org.robolectric", name = "robolectric", version = "4.11
 
 # Inversion of Control
 javax-inject = { group = "javax.inject", name = "javax.inject", version = "1" }
+sentry-android = { group = "io.sentry", name = "sentry-android", version.ref = "sentry" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+sentry-android-gradle = { id = "io.sentry.android.gradle", version.ref = "sentryGradle" }

@@ -24,6 +24,11 @@
         android:theme="@style/Theme.Raybod"
         tools:targetApi="31">
 
+        <!-- Sentry: manual init in RaybodApp (auto-init disabled) -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
+
         <!-- Disable default WorkManager initialization since we use custom Configuration.Provider -->
         <provider
             android:name="androidx.startup.InitializationProvider"

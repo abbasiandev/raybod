@@ -130,7 +130,7 @@ fun AboutScreen() {
             Spacer(Modifier.height(48.dp))
             
             Text(
-                text = "DEVELOPED BY CODEKHODA TEAM",
+                text = "DEVELOPED BY ABBASIAN.DEV",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextMuted,
                 fontWeight = FontWeight.Medium

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.sentry.android.gradle)
     id("kotlin-kapt")
 }
 
@@ -15,6 +16,9 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0-alpha"
+
+        manifestPlaceholders["sentryRelease"] = "$applicationId@$versionName+$versionCode"
+        manifestPlaceholders["sentryEnvironment"] = "debug"
 
         testInstrumentationRunner = "dev.abbasian.raybod.HiltTestRunner"
         vectorDrawables {
@@ -31,14 +35,6 @@ android {
         }
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release")
-        }
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -48,6 +44,19 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    buildTypes {
+        debug {
+            manifestPlaceholders["sentryEnvironment"] = "debug"
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
+            manifestPlaceholders["sentryEnvironment"] = "production"
+        }
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.10"
@@ -91,4 +100,17 @@ dependencies {
     // Hilt testing
     androidTestImplementation(libs.hilt.android.testing)
     kaptAndroidTest(libs.hilt.android.compiler.testing)
+
+    implementation(libs.sentry.android)
+}
+
+sentry {
+    org.set("dubai-j4")
+    projectName.set("android")
+    authToken.set(System.getenv("SENTRY_AUTH_TOKEN") ?: "")
+    includeProguardMapping.set(true)
+    autoUploadProguardMapping.set(!System.getenv("SENTRY_AUTH_TOKEN").isNullOrEmpty())
+    tracingInstrumentation {
+        enabled.set(true)
+    }
 }
