@@ -22,7 +22,7 @@ def test_landing_page_accessible(client):
     """The landing page should be accessible at the root."""
     response = client.get("/")
     assert response.status_code == 200
-    assert "CODEKHODA SENTINEL" in response.text
+    assert "RAYBOD" in response.text
 
 def test_billing_page_requires_auth(client):
     """Billing page should redirect to login if not authenticated."""

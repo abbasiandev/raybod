@@ -181,8 +181,8 @@ sdk.dir=/path/to/your/Android/Sdk
 # For local development (Emulator):
 # cloud.brain.url=http://10.0.2.2:8000
 
-# For production (Liara):
-cloud.brain.url=https://codekhoda-sentinel.liara.run
+# For production:
+cloud.brain.url=https://gitr_g6pdx-727.b.jrnm.app
 cloud.brain.api.version=v1
 ```
 
@@ -225,11 +225,11 @@ INFO:     Application startup complete.
 curl http://localhost:8000/health
 
 # Health endpoint (Production)
-curl https://codekhoda-sentinel.liara.run/health
+curl https://gitr_g6pdx-727.b.jrnm.app/health
 
 # API documentation
 # Local: http://localhost:8000/docs
-# Production: https://codekhoda-sentinel.liara.run/docs
+# Production: https://gitr_g6pdx-727.b.jrnm.app/docs
 ```
 
 ### Step 3: Run Android App

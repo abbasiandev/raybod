@@ -89,19 +89,19 @@ The Cloud Brain is deployed and accessible at:
 
 | Endpoint | URL |
 |----------|-----|
-| **Landing Page** | https://codekhoda-sentinel.liara.run/ |
-| **Admin Dashboard** | https://codekhoda-sentinel.liara.run/dashboard/ |
-| **Login Page** | https://codekhoda-sentinel.liara.run/dashboard/login |
-| **Health Check** | https://codekhoda-sentinel.liara.run/health |
-| **API Documentation** | https://codekhoda-sentinel.liara.run/docs |
-| **Scan Endpoint** | https://codekhoda-sentinel.liara.run/api/v1/scan/analyze |
+| **Landing Page** | https://gitr_g6pdx-727.b.jrnm.app/ |
+| **Admin Dashboard** | https://gitr_g6pdx-727.b.jrnm.app/dashboard/ |
+| **Login Page** | https://gitr_g6pdx-727.b.jrnm.app/dashboard/login |
+| **Health Check** | https://gitr_g6pdx-727.b.jrnm.app/health |
+| **API Documentation** | https://gitr_g6pdx-727.b.jrnm.app/docs |
+| **Scan Endpoint** | https://gitr_g6pdx-727.b.jrnm.app/api/v1/scan/analyze |
 | **Threat Intel (Web)**| [Package Lists JSON](https://raw.githubusercontent.com/codekhoda/threat-intel/main/package_lists.json) |
 
 ### Infrastructure
 
 | Component | Platform | Details |
 |-----------|----------|---------|
-| **Backend** | [Liara](https://liara.ir) | Docker container on free tier |
+| **Backend** | [JustRunMy.App](https://justrunmy.app) | Docker container |
 | **Database** | SQLite | Lightweight embedded database |
 | **Intel Source** | GitHub | Dynamic threat signatures (OTA) |
 
@@ -128,7 +128,7 @@ We utilize a multi-layered approach to threat detection:
 
 ### Option A: Use Live Backend (Recommended)
 
-The Android app is pre-configured to use the live Liara backend at `https://codekhoda-sentinel.liara.run`. Simply:
+The Android app is pre-configured to use the live backend at `https://gitr_g6pdx-727.b.jrnm.app/`. Simply:
 
 1. Clone the repository
 2. Open `android/` in Android Studio
@@ -154,8 +154,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 *Local Server runs at `http://127.0.0.1:8000`*  
-*Production API available at `https://codekhoda-sentinel.liara.run`*  
-*API Documentation: [Local](http://127.0.0.1:8000/docs) | [Production](https://codekhoda-sentinel.liara.run/docs)*
+*Production API available at `https://gitr_g6pdx-727.b.jrnm.app`*  
+*API Documentation: [Local](http://127.0.0.1:8000/docs) | [Production](https://gitr_g6pdx-727.b.jrnm.app/docs)*
 
 #### 3. Configure Android for Local Backend
 
@@ -167,39 +167,35 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    # For local development (Emulator):
    cloud.brain.url=http://10.0.2.2:8000
    
-   # For production (Liara):
-   # cloud.brain.url=https://codekhoda-sentinel.liara.run
+   # For production:
+   # cloud.brain.url=https://gitr_g6pdx-727.b.jrnm.app
    ```
 
 ---
 
 ## ☁️ Deployment Guide
 
-### Deploying to Liara
+### Deploying to JustRunMy.App
 
-1. **Install Liara CLI**:
+1. **Create app** on [JustRunMy.App](https://justrunmy.app/panel) and copy the Git deploy URL.
+
+2. **Push backend only** (from repo root):
+
    ```bash
-   npm install -g @liara/cli
+   git subtree split --prefix=backend -b justrunmy-deploy
+   git push -u YOUR_JUSTRUNMY_GIT_URL justrunmy-deploy:deploy
    ```
 
-2. **Deploy Backend**:
+3. **Configure in panel**:
+   - HTTPS port: `8000`
+   - Env: `JWT_SECRET`, `DEBUG=false`
+   - Volume mount: `/data`
+
+4. **Verify**:
+
    ```bash
-   cd backend
-   liara deploy --app codekhoda-sentinel --platform docker --port 8000
+   curl https://gitr_g6pdx-727.b.jrnm.app/health
    ```
-
-   The deployment uses the Docker platform and will automatically build the image from the Dockerfile.
-
-3. **Configure Environment Variables** (Optional):
-   ```bash
-   liara env set --app codekhoda-sentinel JWT_SECRET=your-secure-secret-key-here
-   liara env set --app codekhoda-sentinel DEBUG=false
-   ```
-
-4. **Using GitHub Actions for CI/CD**:
-   - Add `LIARA_API_TOKEN` to your GitHub repository secrets
-   - Generate the token from Liara Console -> Account -> API Tokens
-   - The workflow will automatically deploy on push to `main` branch
 
 ### Database Information
 
