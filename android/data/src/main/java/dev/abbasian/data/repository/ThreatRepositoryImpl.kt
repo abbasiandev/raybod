@@ -11,6 +11,7 @@ import dev.abbasian.domain.model.DrebinFeatures
 import dev.abbasian.domain.model.RiskAssessment
 import dev.abbasian.domain.model.RiskLevel
 import dev.abbasian.domain.repository.ThreatRepository
+import dev.abbasian.data.debug.DebugTrace
 import javax.inject.Inject
 
 class ThreatRepositoryImpl @Inject constructor(
@@ -109,16 +110,110 @@ class ThreatRepositoryImpl @Inject constructor(
         if (appPackages.isEmpty()) return 0
 
         var synced = 0
+        var chunkIndex = 0
+        var localHighThreatCount = 0
+        appPackages.forEach { app ->
+            val cached = riskDao.getRisk(app.packageName)
+            if (cached != null) {
+                val level = try {
+                    RiskLevel.valueOf(cached.riskLevel)
+                } catch (_: Exception) {
+                    RiskLevel.UNKNOWN
+                }
+                if (level == RiskLevel.HIGH || level == RiskLevel.CRITICAL || level == RiskLevel.MEDIUM) {
+                    localHighThreatCount++
+                }
+            }
+        }
+        // #region agent log
+        DebugTrace.log(
+            hypothesisId = "A,E",
+            location = "ThreatRepositoryImpl.kt:syncScanLogsToCloud:start",
+            message = "Starting batch cloud sync",
+            data = mapOf(
+                "totalApps" to appPackages.size,
+                "chunkSize" to CLOUD_BATCH_SIZE,
+                "localThreatCount" to localHighThreatCount
+            )
+        )
+        // #endregion
         appPackages.chunked(CLOUD_BATCH_SIZE).forEach { chunk ->
+            chunkIndex++
+            var chunkWithEnsemble = 0
+            var chunkLocalThreats = 0
+            var ensembleSentInPayload = 0
+            val dtos = chunk.map { app ->
+                val cached = riskDao.getRisk(app.packageName)?.toDomain()
+                if (cached?.ensembleMetadata?.isNotEmpty() == true) {
+                    chunkWithEnsemble++
+                }
+                if (cached != null && cached.riskLevel != RiskLevel.SAFE && cached.riskLevel != RiskLevel.UNKNOWN) {
+                    chunkLocalThreats++
+                }
+                val dto = buildMetadataDto(app, cached)
+                if (dto.ensembleMetadata?.isNotEmpty() == true) {
+                    ensembleSentInPayload++
+                }
+                dto
+            }
+            // #region agent log
+            DebugTrace.log(
+                hypothesisId = "C",
+                location = "ThreatRepositoryImpl.kt:syncScanLogsToCloud:chunk",
+                message = "Prepared batch chunk payload",
+                data = mapOf(
+                    "chunkIndex" to chunkIndex,
+                    "chunkApps" to chunk.size,
+                    "localThreatsInChunk" to chunkLocalThreats,
+                    "withEnsembleMetadataAvailable" to chunkWithEnsemble,
+                    "ensembleSentInPayload" to ensembleSentInPayload
+                )
+            )
+            // #endregion
             try {
-                val dtos = chunk.map { buildMetadataDto(it) }
                 api.batchScan(dev.abbasian.data.remote.dto.BatchScanRequestDto(dtos))
                 synced += chunk.size
                 Log.i(TAG, "Batch synced ${chunk.size} apps to cloud ($synced/${appPackages.size})")
+                // #region agent log
+                DebugTrace.log(
+                    hypothesisId = "A",
+                    location = "ThreatRepositoryImpl.kt:syncScanLogsToCloud:success",
+                    message = "Batch chunk synced successfully",
+                    data = mapOf(
+                        "chunkIndex" to chunkIndex,
+                        "syncedTotal" to synced,
+                        "targetTotal" to appPackages.size
+                    )
+                )
+                // #endregion
             } catch (e: Exception) {
                 Log.e(TAG, "Batch cloud sync failed for ${chunk.size} apps", e)
+                // #region agent log
+                DebugTrace.log(
+                    hypothesisId = "A",
+                    location = "ThreatRepositoryImpl.kt:syncScanLogsToCloud:failure",
+                    message = "Batch chunk sync failed",
+                    data = mapOf(
+                        "chunkIndex" to chunkIndex,
+                        "errorType" to e.javaClass.simpleName,
+                        "errorMessage" to (e.message ?: "unknown")
+                    )
+                )
+                // #endregion
             }
         }
+        // #region agent log
+        DebugTrace.log(
+            hypothesisId = "A,E",
+            location = "ThreatRepositoryImpl.kt:syncScanLogsToCloud:done",
+            message = "Batch cloud sync finished",
+            data = mapOf(
+                "synced" to synced,
+                "totalApps" to appPackages.size,
+                "localThreatCount" to localHighThreatCount
+            )
+        )
+        // #endregion
         return synced
     }
 

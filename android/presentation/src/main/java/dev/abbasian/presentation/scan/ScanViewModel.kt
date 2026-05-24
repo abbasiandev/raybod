@@ -154,6 +154,32 @@ class ScanViewModel @Inject constructor(
                     )
 
                     val syncedCount = syncScanLogsUseCase(apps)
+                    val localThreatCount = results.count { result ->
+                        result.riskLevel != RiskLevel.SAFE && result.riskLevel != RiskLevel.UNKNOWN
+                    }
+                    // #region agent log
+                    android.util.Log.i(
+                        "RaybodDebug",
+                        org.json.JSONObject(
+                            mapOf(
+                                "sessionId" to "e7b765",
+                                "hypothesisId" to "A,C,D,E",
+                                "location" to "ScanViewModel.kt:startScan:postSync",
+                                "message" to "Scan finished and cloud sync attempted",
+                                "timestamp" to System.currentTimeMillis(),
+                                "runId" to "post-fix",
+                                "data" to org.json.JSONObject(
+                                    mapOf(
+                                        "syncedCount" to syncedCount,
+                                        "totalApps" to apps.size,
+                                        "localThreatCount" to localThreatCount,
+                                        "lowSpeedMode" to lowSpeedMode
+                                    )
+                                )
+                            )
+                        ).toString()
+                    )
+                    // #endregion
                     val cloudSyncMessage = when {
                         apps.isEmpty() -> null
                         syncedCount >= apps.size -> "Reported $syncedCount/${apps.size} apps to cloud"
