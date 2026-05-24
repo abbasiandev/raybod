@@ -10,9 +10,11 @@ import dev.abbasian.data.remote.dto.ScanResultDto
 import dev.abbasian.domain.model.AppPackage
 import dev.abbasian.domain.model.RiskAssessment
 import dev.abbasian.domain.model.RiskLevel
+import dev.abbasian.data.mapper.toEntity
 import dev.abbasian.data.remote.dto.BatchScanResultDto
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.firstArg
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.runBlocking
@@ -249,6 +251,35 @@ class ThreatRepositoryImplTest {
 
         assertEquals(30, synced)
         coVerify(exactly = 2) { api.batchScan(any()) }
+    }
+
+    @Test
+    fun `syncScanLogsToCloud includes cached ensemble metadata in batch payload`() = runBlocking {
+        val appPackage = AppPackage("com.threat.app", 42, signature = "sig")
+        val cached = RiskAssessment(
+            packageName = "com.threat.app",
+            riskLevel = RiskLevel.CRITICAL,
+            description = "Local ML",
+            ensembleMetadata = mapOf("final_boosted_score" to 0.91f)
+        ).toEntity(
+            syncStatus = dev.abbasian.data.local.entity.SyncStatus.PENDING,
+            appVersion = 42,
+            lastUpdateTime = 0
+        )
+        coEvery { riskDao.getRisk("com.threat.app") } returns cached
+        coEvery { api.batchScan(any()) } answers {
+            val request = firstArg<dev.abbasian.data.remote.dto.BatchScanRequestDto>()
+            assertEquals(1, request.packages.size)
+            assertEquals(0.91f, request.packages[0].ensembleMetadata?.get("final_boosted_score"))
+            BatchScanResultDto(
+                results = listOf(ScanResultDto("com.threat.app", "CRITICAL", "Malware Detected", "On-device", emptyList()))
+            )
+        }
+
+        val synced = repository.syncScanLogsToCloud(listOf(appPackage))
+
+        assertEquals(1, synced)
+        coVerify(exactly = 1) { api.batchScan(any()) }
     }
 
     @Test

@@ -418,3 +418,39 @@ class TestGlobalEngineInstance:
         result = engine.analyze(metadata)
 
         assert result.risk_level == RiskLevel.SAFE
+
+
+class TestEnsembleMetadataSync:
+    """On-device ML scores from phone batch sync should appear in cloud results."""
+
+    def test_high_ensemble_score_returns_critical(self):
+        heuristic_engine = HeuristicEngine()
+        from app.schemas.scan_schema import DrebinFeatures
+        metadata = AppMetadata(
+            package_name="com.phone.sync.test",
+            version_code=1,
+            signature="hash",
+            permissions=["android.permission.INTERNET"],
+            ensemble_metadata={
+                "final_boosted_score": 0.95,
+                "calibrated_score": 0.92,
+            },
+        )
+        result = heuristic_engine._assess_from_ensemble_metadata(metadata, DrebinFeatures())
+        assert result is not None
+        assert result.risk_level == RiskLevel.CRITICAL
+        assert result.threat_type == "Malware Detected"
+        assert "OnDeviceEnsemble" in result.heuristics_used
+
+    def test_analyze_uses_ensemble_when_cloud_heuristics_clean(self):
+        heuristic_engine = HeuristicEngine()
+        metadata = AppMetadata(
+            package_name="com.phone.sync.clean.heuristics",
+            version_code=1,
+            signature="hash",
+            permissions=["android.permission.INTERNET"],
+            ensemble_metadata={"final_boosted_score": 0.82},
+        )
+        result = heuristic_engine.analyze(metadata)
+        assert result.risk_level == RiskLevel.CRITICAL
+        assert "OnDeviceEnsemble" in result.heuristics_used

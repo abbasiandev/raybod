@@ -10,6 +10,7 @@ from app.api.v1.endpoints.websocket import manager
 from slowapi.errors import RateLimitExceeded
 import json
 import os
+from app.debug_trace import agent_debug_log
 
 router = APIRouter()
 
@@ -120,7 +121,31 @@ async def batch_scan(
         return scan_results
 
     try:
+        device_id = request.headers.get("X-Device-ID")
+        ensemble_count = sum(1 for p in batch_data.packages if p.ensemble_metadata)
         batch_scan_results = await limited_batch(request)
+        risk_counts: dict[str, int] = {}
+        stored_high = 0
+        for result in batch_scan_results:
+            risk_counts[result.risk_level.value] = risk_counts.get(result.risk_level.value, 0) + 1
+            if result.risk_level.value in ("HIGH", "CRITICAL"):
+                stored_high += 1
+        # #region agent log
+        agent_debug_log(
+            hypothesis_id="B,C",
+            location="scan.py:batch_scan",
+            message="Batch scan completed",
+            data={
+                "package_count": len(batch_data.packages),
+                "device_id_present": bool(device_id),
+                "device_id_is_unknown": device_id == "unknown",
+                "device_id_prefix": (device_id or "")[:8],
+                "with_ensemble_metadata": ensemble_count,
+                "stored_risk_counts": risk_counts,
+                "stored_high_critical": stored_high,
+            },
+        )
+        # #endregion
         return BatchScanResult(results=batch_scan_results)
     except RateLimitExceeded:
         raise HTTPException(status_code=429, detail="Too many requests")

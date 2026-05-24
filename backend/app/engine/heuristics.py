@@ -26,6 +26,11 @@ class HeuristicEngine:
         "widget", "launcher", "keyboard", "note", "compass"
     }
     
+    # Match on-device MalwareScanner thresholds (android/data/.../MalwareScanner.kt)
+    ENSEMBLE_THRESHOLD_CRITICAL = 0.75
+    ENSEMBLE_THRESHOLD_HIGH = 0.50
+    ENSEMBLE_THRESHOLD_MEDIUM = 0.20
+    
     def analyze(self, metadata: AppMetadata) -> ScanResult:
         """Analyze app metadata and return risk assessment."""
         db = SessionLocal()
@@ -75,6 +80,8 @@ class HeuristicEngine:
                     )
         finally:
             db.close()
+
+        ensemble_result = self._assess_from_ensemble_metadata(metadata, drebin)
             
         # Rule 1.5: Analyze suspicious intent patterns
         intent_result = self._analyze_intents(metadata, drebin)
@@ -168,7 +175,10 @@ class HeuristicEngine:
                 drebin_features=drebin
             )
         
-        # No threats detected - return clean result
+        # No threats detected by cloud heuristics — honor on-device ML from phone batch sync
+        if ensemble_result and ensemble_result.risk_level != RiskLevel.SAFE:
+            return ensemble_result
+
         return ScanResult(
             package_name=metadata.package_name,
             risk_level=RiskLevel.SAFE,
@@ -227,5 +237,61 @@ class HeuristicEngine:
             )
         
         return None
+
+    def _assess_from_ensemble_metadata(
+        self,
+        metadata: AppMetadata,
+        drebin: DrebinFeatures,
+    ) -> Optional[ScanResult]:
+        """Map on-device ensemble scores uploaded by the Android app during batch sync."""
+        ensemble = metadata.ensemble_metadata
+        if not ensemble:
+            return None
+
+        score = max(
+            float(ensemble.get("final_boosted_score", 0) or 0),
+            float(ensemble.get("calibrated_score", 0) or 0),
+            float(ensemble.get("tflite_model", 0) or 0),
+        )
+        if score <= 0:
+            return None
+
+        confidence_pct = int(score * 100)
+        if score > self.ENSEMBLE_THRESHOLD_CRITICAL:
+            return ScanResult(
+                package_name=metadata.package_name,
+                risk_level=RiskLevel.CRITICAL,
+                threat_type="Malware Detected",
+                description=f"On-device AI confidence: {confidence_pct}% - Flagged as malicious.",
+                heuristics_used=["OnDeviceEnsemble"],
+                drebin_features=drebin,
+            )
+        if score > self.ENSEMBLE_THRESHOLD_HIGH:
+            return ScanResult(
+                package_name=metadata.package_name,
+                risk_level=RiskLevel.HIGH,
+                threat_type="Potential Risk",
+                description=f"On-device AI confidence: {confidence_pct}% - Suspicious behavior detected.",
+                heuristics_used=["OnDeviceEnsemble"],
+                drebin_features=drebin,
+            )
+        if score > self.ENSEMBLE_THRESHOLD_MEDIUM:
+            return ScanResult(
+                package_name=metadata.package_name,
+                risk_level=RiskLevel.MEDIUM,
+                threat_type="Low Risk",
+                description=f"On-device AI confidence: {confidence_pct}% - Some indicators present.",
+                heuristics_used=["OnDeviceEnsemble"],
+                drebin_features=drebin,
+            )
+
+        return ScanResult(
+            package_name=metadata.package_name,
+            risk_level=RiskLevel.SAFE,
+            threat_type="",
+            description=f"On-device AI confidence: {confidence_pct}% - Clean.",
+            heuristics_used=["OnDeviceEnsemble"],
+            drebin_features=drebin,
+        )
 
 engine = HeuristicEngine()
