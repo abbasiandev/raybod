@@ -63,7 +63,9 @@ object DataModule {
     @Provides
     @Singleton
     fun provideGson(): com.google.gson.Gson {
-        return com.google.gson.Gson()
+        return com.google.gson.GsonBuilder()
+            .serializeSpecialFloatingPointValues()
+            .create()
     }
 
     @Provides
@@ -76,12 +78,13 @@ object DataModule {
         }
         
         return okhttp3.OkHttpClient.Builder()
+            .dns(dev.abbasian.data.remote.NetworkDns.preferIpv4)
             .addInterceptor(deviceIdInterceptor)
             .addInterceptor(logging)
             .addInterceptor(dev.abbasian.data.remote.interceptor.RetryInterceptor(maxRetries = 3))
-            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
-            .writeTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
             .build()
     }
 

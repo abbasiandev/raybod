@@ -250,7 +250,7 @@ class ThreatRepositoryImplTest {
         val synced = repository.syncScanLogsToCloud(packages)
 
         assertEquals(30, synced)
-        coVerify(exactly = 2) { api.batchScan(any()) }
+        coVerify(exactly = 3) { api.batchScan(any()) }
     }
 
     @Test
