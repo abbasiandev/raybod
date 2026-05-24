@@ -9,6 +9,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dev.abbasian.agent.scanner.PackageAnalyzer
 import dev.abbasian.domain.repository.ThreatRepository
+import androidx.work.ListenableWorker.Result as WorkerResult
 
 @HiltWorker
 class CloudSyncWorker @AssistedInject constructor(
@@ -18,7 +19,7 @@ class CloudSyncWorker @AssistedInject constructor(
     private val packageAnalyzer: PackageAnalyzer
 ) : CoroutineWorker(context, workerParams) {
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): WorkerResult {
         val packageNames = workerParams.inputData
             .getString(CloudSyncScheduler.KEY_PACKAGE_NAMES)
             ?.split(",")
@@ -27,21 +28,21 @@ class CloudSyncWorker @AssistedInject constructor(
 
         if (packageNames.isEmpty()) {
             Log.w(TAG, "No packages to sync")
-            return Result.failure()
+            return WorkerResult.failure()
         }
 
         val appPackages = packageNames.mapNotNull { packageAnalyzer.analyzePackage(it) }
         if (appPackages.isEmpty()) {
-            return Result.retry()
+            return WorkerResult.retry()
         }
 
         val synced = threatRepository.syncScanLogsToCloud(appPackages)
         Log.i(TAG, "Retry synced $synced/${appPackages.size} apps")
 
         return when {
-            synced >= appPackages.size -> Result.success()
-            synced > 0 -> Result.success()
-            else -> Result.retry()
+            synced >= appPackages.size -> WorkerResult.success()
+            synced > 0 -> WorkerResult.success()
+            else -> WorkerResult.retry()
         }
     }
 

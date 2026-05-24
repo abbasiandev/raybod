@@ -3,6 +3,7 @@ package dev.abbasian.data.repository
 import dev.abbasian.data.local.dao.RiskDao
 import dev.abbasian.data.ml.MalwareScanner
 import dev.abbasian.data.remote.api.CloudBrainApi
+import dev.abbasian.data.remote.dto.AllowlistCheckDto
 import dev.abbasian.data.remote.dto.AppMetadataDto
 import dev.abbasian.data.remote.dto.ScanResultDto
 import dev.abbasian.domain.model.AppPackage
@@ -27,7 +28,7 @@ class ThreatRepositoryImplExtendedTest {
     fun setup() {
         riskDao = mockk(relaxed = true)
         api = mockk()
-        malwareScanner = mockk(relaxed = true)
+        malwareScanner = mockk()
         repository = ThreatRepositoryImpl(riskDao, api, malwareScanner)
     }
 
@@ -54,8 +55,14 @@ class ThreatRepositoryImplExtendedTest {
         )
 
         val capturedDto = slot<AppMetadataDto>()
-        coEvery { api.analyzeApp(capture(capturedDto)) } returns mockResult
+        coEvery { api.checkAllowlist(any()) } returns AllowlistCheckDto("com.test", isAllowed = false)
         coEvery { riskDao.getRisk(any()) } returns null
+        coEvery { malwareScanner.scan(appPackage) } returns RiskAssessment(
+            packageName = "com.test",
+            riskLevel = RiskLevel.SAFE,
+            description = "Local scan"
+        )
+        coEvery { api.analyzeApp(capture(capturedDto)) } returns mockResult
 
         // When
         repository.scanApp(appPackage)

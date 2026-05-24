@@ -5,6 +5,7 @@ import dev.abbasian.data.local.entity.CachedRiskEntity
 import dev.abbasian.data.ml.MalwareScanner
 import dev.abbasian.data.remote.api.CloudBrainApi
 import dev.abbasian.data.remote.dto.AppMetadataDto
+import dev.abbasian.data.remote.dto.AllowlistCheckDto
 import dev.abbasian.data.remote.dto.ScanResultDto
 import dev.abbasian.domain.model.AppPackage
 import dev.abbasian.domain.model.RiskAssessment
@@ -31,6 +32,7 @@ class ThreatRepositoryImplTest {
         api = mockk()
         malwareScanner = mockk()
         repository = ThreatRepositoryImpl(riskDao, api, malwareScanner)
+        coEvery { api.checkAllowlist(any()) } returns AllowlistCheckDto("", isAllowed = false)
     }
 
     @Test
