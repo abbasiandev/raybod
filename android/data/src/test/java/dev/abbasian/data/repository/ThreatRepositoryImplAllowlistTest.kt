@@ -29,6 +29,7 @@ class ThreatRepositoryImplAllowlistTest {
         api = mockk()
         malwareScanner = mockk()
         repository = ThreatRepositoryImpl(riskDao, api, malwareScanner)
+        coEvery { api.checkAllowlist(any()) } returns AllowlistCheckDto("", isAllowed = false)
     }
 
     @Test

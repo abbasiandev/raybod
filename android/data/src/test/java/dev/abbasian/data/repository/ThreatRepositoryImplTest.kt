@@ -10,8 +10,11 @@ import dev.abbasian.data.remote.dto.ScanResultDto
 import dev.abbasian.domain.model.AppPackage
 import dev.abbasian.domain.model.RiskAssessment
 import dev.abbasian.domain.model.RiskLevel
+import dev.abbasian.data.remote.dto.BatchScanRequestDto
+import dev.abbasian.data.remote.dto.BatchScanResultDto
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.firstArg
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.runBlocking
@@ -238,11 +241,14 @@ class ThreatRepositoryImplTest {
         val packages = (1..30).map {
             AppPackage("com.app$it", it.toLong(), signature = "hash$it")
         }
-        coEvery { api.batchScan(any()) } returns dev.abbasian.data.remote.dto.BatchScanResultDto(
-            results = packages.map {
-                ScanResultDto(it.packageName, "SAFE", "", "Clean", emptyList())
-            }
-        )
+        coEvery { api.batchScan(any()) } answers {
+            val request = firstArg<BatchScanRequestDto>()
+            BatchScanResultDto(
+                results = request.packages.map {
+                    ScanResultDto(it.packageName, "SAFE", "", "Clean", emptyList())
+                }
+            )
+        }
 
         val synced = repository.syncScanLogsToCloud(packages)
 

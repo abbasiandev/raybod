@@ -31,7 +31,11 @@ class CloudSyncWorker @AssistedInject constructor(
             return WorkerResult.failure()
         }
 
-        val appPackages = packageNames.mapNotNull { packageAnalyzer.analyzePackage(it) }
+        val appPackages = buildList {
+            for (packageName in packageNames) {
+                packageAnalyzer.analyzePackage(packageName)?.let { add(it) }
+            }
+        }
         if (appPackages.isEmpty()) {
             return WorkerResult.retry()
         }
