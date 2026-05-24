@@ -150,7 +150,7 @@ class ThreatRepositoryImpl @Inject constructor(
                 if (cached != null && cached.riskLevel != RiskLevel.SAFE && cached.riskLevel != RiskLevel.UNKNOWN) {
                     chunkLocalThreats++
                 }
-                val dto = buildMetadataDto(app, cached)
+                val dto = buildBatchSyncDto(app, cached)
                 if (dto.ensembleMetadata?.isNotEmpty() == true) {
                     ensembleSentInPayload++
                 }
@@ -193,11 +193,7 @@ class ThreatRepositoryImpl @Inject constructor(
                     hypothesisId = "A",
                     location = "ThreatRepositoryImpl.kt:syncScanLogsToCloud:failure",
                     message = "Batch chunk sync failed",
-                    data = mapOf(
-                        "chunkIndex" to chunkIndex,
-                        "errorType" to e.javaClass.simpleName,
-                        "errorMessage" to (e.message ?: "unknown")
-                    )
+                    data = describeSyncError(e) + mapOf("chunkIndex" to chunkIndex)
                 )
                 // #endregion
             }
@@ -251,6 +247,54 @@ class ThreatRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun buildBatchSyncDto(
+        appPackage: AppPackage,
+        localResult: RiskAssessment?
+    ): AppMetadataDto {
+        return AppMetadataDto(
+            packageName = appPackage.packageName,
+            versionCode = appPackage.versionCode,
+            signature = appPackage.signature,
+            permissions = emptyList(),
+            ensembleMetadata = sanitizeEnsembleMetadata(localResult?.ensembleMetadata),
+            intents = emptyList(),
+            versionName = appPackage.versionName,
+            installTime = appPackage.installTime,
+            lastUpdateTime = appPackage.lastUpdateTime,
+            hasReflection = appPackage.hasReflection,
+            hasDynamicLoading = appPackage.hasDynamicLoading
+        )
+    }
+
+    private fun sanitizeEnsembleMetadata(
+        metadata: Map<String, Float>?
+    ): Map<String, Float>? {
+        if (metadata.isNullOrEmpty()) return null
+        val sanitized = metadata.mapNotNull { (key, value) ->
+            if (value.isFinite() && value >= 0f) key to value else null
+        }.toMap()
+        return sanitized.ifEmpty { null }
+    }
+
+    private fun describeSyncError(e: Exception): Map<String, Any?> {
+        val details = mutableMapOf<String, Any?>(
+            "errorType" to e.javaClass.simpleName,
+            "errorMessage" to (e.message ?: "unknown")
+        )
+        var cause = e.cause
+        var depth = 0
+        while (cause != null && depth < 3) {
+            details["cause$depth"] = "${cause.javaClass.simpleName}: ${cause.message}"
+            cause = cause.cause
+            depth++
+        }
+        if (e is retrofit2.HttpException) {
+            details["httpCode"] = e.code()
+            details["httpBody"] = e.response()?.errorBody()?.string()?.take(200)
+        }
+        return details
+    }
+
     private fun buildMetadataDto(
         appPackage: AppPackage,
         localResult: RiskAssessment? = null
@@ -260,7 +304,7 @@ class ThreatRepositoryImpl @Inject constructor(
             versionCode = appPackage.versionCode,
             signature = appPackage.signature,
             permissions = appPackage.permissions,
-            ensembleMetadata = localResult?.ensembleMetadata,
+            ensembleMetadata = sanitizeEnsembleMetadata(localResult?.ensembleMetadata),
             intents = appPackage.intents,
             versionName = appPackage.versionName,
             installTime = appPackage.installTime,
@@ -317,6 +361,6 @@ class ThreatRepositoryImpl @Inject constructor(
 
     private companion object {
         const val TAG = "RaybodCloud"
-        const val CLOUD_BATCH_SIZE = 25
+        const val CLOUD_BATCH_SIZE = 10
     }
 }
