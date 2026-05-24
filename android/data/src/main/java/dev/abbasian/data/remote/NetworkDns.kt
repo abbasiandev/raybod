@@ -11,9 +11,11 @@ import java.net.InetAddress
 object NetworkDns {
     private val systemDns: Dns = Dns.SYSTEM
 
-    val preferIpv4: Dns = Dns { hostname ->
-        val addresses = systemDns.lookup(hostname)
-        val ipv4 = addresses.filterIsInstance<Inet4Address>()
-        if (ipv4.isNotEmpty()) ipv4 else addresses
+    val preferIpv4: Dns = object : Dns {
+        override fun lookup(hostname: String): List<InetAddress> {
+            val addresses = systemDns.lookup(hostname)
+            val ipv4 = addresses.filter { it is Inet4Address }
+            return if (ipv4.isNotEmpty()) ipv4 else addresses
+        }
     }
 }
