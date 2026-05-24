@@ -7,6 +7,11 @@
 <a href="/dashboard/export/csv" class="btn btn-secondary btn-sm">
     📥 Export CSV
 </a>
+<form method="post" action="/dashboard/analytics/cleanup-test-data" style="display:inline;">
+    <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Delete API test scan logs?');">
+        🧹 Clean test data
+    </button>
+</form>
 {% endblock %}
 
 {% block content %}
@@ -22,16 +27,30 @@
     <div class="stat-card">
         <div class="stat-icon success">📊</div>
         <div class="stat-content">
-            <div class="stat-value">{{ logs | length }}</div>
-            <div class="stat-label">Recent Scans</div>
+            <div class="stat-value">{{ total_filtered | default(logs | length) }}</div>
+            <div class="stat-label">Matching Scans</div>
         </div>
     </div>
 </div>
 
 <div class="card mt-3">
-    <div class="card-header">
-        <h3 class="card-title">Scan History</h3>
+    <div class="card-header" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+        <h3 class="card-title" style="margin:0;">Scan History</h3>
+        <form method="get" action="/dashboard/analytics" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+            <input type="text" name="device_id" class="form-input" placeholder="Device ID filter"
+                value="{{ device_id }}" style="min-width:180px;" />
+            <label style="display:flex; align-items:center; gap:6px; font-size:0.9rem;">
+                <input type="checkbox" name="phone_only" value="1" {% if phone_only %}checked{% endif %}
+                    onchange="this.form.submit()" />
+                Phone scans only
+            </label>
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <a href="/dashboard/analytics" class="btn btn-secondary btn-sm">Clear</a>
+        </form>
     </div>
+    {% if filter_label %}
+    <p class="text-muted" style="padding:0 1rem; margin:0.5rem 0 0;">{{ filter_label }}</p>
+    {% endif %}
     <div class="table-container">
         <table>
             <thead>

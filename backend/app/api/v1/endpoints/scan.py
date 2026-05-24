@@ -13,8 +13,10 @@ import os
 
 router = APIRouter()
 
-# Rate limiting configuration (full device scans can report 100+ apps)
-RATE_LIMIT_PER_MINUTE = os.getenv("SCAN_RATE_LIMIT", "120/minute")
+# Full device scans report 100+ apps — per-app limit is for Swagger/single checks;
+# batch endpoint is what the Android app uses after a full scan.
+RATE_LIMIT_PER_MINUTE = os.getenv("SCAN_RATE_LIMIT", "60/minute")
+BATCH_RATE_LIMIT = os.getenv("SCAN_BATCH_RATE_LIMIT", "30/minute")
 
 @router.post("/analyze", response_model=ScanResult)
 async def analyze_app(
@@ -86,7 +88,7 @@ async def batch_scan(
     # Note: Rate limiting for batch can be handled per-request or per-app in batch.
     # For now, we apply it to the whole request.
     from app.main import limiter
-    @limiter.limit(RATE_LIMIT_PER_MINUTE)
+    @limiter.limit(BATCH_RATE_LIMIT)
     async def limited_batch(request: Request):
         scan_results = []
         

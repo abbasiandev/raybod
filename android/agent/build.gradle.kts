@@ -33,6 +33,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.hilt.work)
+    kapt(libs.hilt.work.compiler)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material)
 

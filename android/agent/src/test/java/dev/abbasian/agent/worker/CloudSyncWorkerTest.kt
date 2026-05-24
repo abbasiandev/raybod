@@ -1,15 +1,15 @@
 package dev.abbasian.agent.worker
 
 import android.content.Context
+import androidx.work.Data
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import dev.abbasian.data.local.dao.RiskDao
-import dev.abbasian.data.local.entity.CachedRiskEntity
-import dev.abbasian.data.local.entity.SyncStatus
-import dev.abbasian.data.remote.api.CloudBrainApi
-import dev.abbasian.data.remote.dto.ScanResultDto
+import dev.abbasian.agent.scanner.PackageAnalyzer
+import dev.abbasian.domain.model.AppPackage
+import dev.abbasian.domain.repository.ThreatRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -20,73 +20,57 @@ class CloudSyncWorkerTest {
 
     private lateinit var context: Context
     private lateinit var workerParams: WorkerParameters
-    private lateinit var riskDao: RiskDao
-    private lateinit var api: CloudBrainApi
+    private lateinit var threatRepository: ThreatRepository
+    private lateinit var packageAnalyzer: PackageAnalyzer
     private lateinit var worker: CloudSyncWorker
 
     @Before
     fun setup() {
         context = mockk(relaxed = true)
+        threatRepository = mockk()
+        packageAnalyzer = mockk()
+
+        val inputData = Data.Builder()
+            .putString(CloudSyncScheduler.KEY_PACKAGE_NAMES, "com.test.app,com.test.two")
+            .build()
         workerParams = mockk(relaxed = true)
-        riskDao = mockk(relaxed = true)
-        api = mockk(relaxed = true)
-        
-        worker = CloudSyncWorker(context, workerParams, riskDao, api)
+        every { workerParams.inputData } returns inputData
+
+        worker = CloudSyncWorker(context, workerParams, threatRepository, packageAnalyzer)
     }
 
     @Test
-    fun `doWork returns success when no pending risks`() = runBlocking {
-        coEvery { riskDao.getAllRisks() } returns emptyList()
+    fun `doWork returns failure when no package names in input`() = runBlocking {
+        every { workerParams.inputData } returns Data.EMPTY
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.failure(), result)
+        coVerify(exactly = 0) { threatRepository.syncScanLogsToCloud(any()) }
+    }
+
+    @Test
+    fun `doWork batch syncs packages successfully`() = runBlocking {
+        val apps = listOf(
+            AppPackage("com.test.app", 1, signature = "hash1"),
+            AppPackage("com.test.two", 2, signature = "hash2")
+        )
+        coEvery { packageAnalyzer.analyzePackage("com.test.app") } returns apps[0]
+        coEvery { packageAnalyzer.analyzePackage("com.test.two") } returns apps[1]
+        coEvery { threatRepository.syncScanLogsToCloud(apps) } returns 2
 
         val result = worker.doWork()
 
         assertEquals(ListenableWorker.Result.success(), result)
-        coVerify(exactly = 0) { api.analyzeApp(any()) }
+        coVerify { threatRepository.syncScanLogsToCloud(apps) }
     }
 
     @Test
-    fun `doWork syncs pending risks successfully`() = runBlocking {
-        val pendingEntity = CachedRiskEntity(
-            packageName = "com.test.app",
-            riskLevel = "MEDIUM",
-            appVersion = 100,
-            threatType = "Test",
-            description = "Test desc",
-            timestamp = System.currentTimeMillis(),
-            syncStatus = SyncStatus.PENDING.name
-        )
-        
-        coEvery { riskDao.getAllRisks() } returns listOf(pendingEntity)
-        coEvery { api.analyzeApp(any()) } returns ScanResultDto(
-            packageName = "com.test.app",
-            riskLevel = "MEDIUM",
-            threatType = "Test",
-            description = "Updated desc",
-            heuristicsUsed = listOf("Cloud")
-        )
-        coEvery { riskDao.insertRisk(any()) } returns Unit
-
-        val result = worker.doWork()
-
-        assertEquals(ListenableWorker.Result.success(), result)
-        coVerify { api.analyzeApp(any()) }
-        coVerify { riskDao.insertRisk(any()) }
-    }
-
-    @Test
-    fun `doWork retries on failure`() = runBlocking {
-        val pendingEntity = CachedRiskEntity(
-            packageName = "com.test.app",
-            riskLevel = "MEDIUM",
-            appVersion = 100,
-            threatType = "Test",
-            description = "Test desc",
-            timestamp = System.currentTimeMillis(),
-            syncStatus = SyncStatus.PENDING.name
-        )
-        
-        coEvery { riskDao.getAllRisks() } returns listOf(pendingEntity)
-        coEvery { api.analyzeApp(any()) } throws Exception("Network error")
+    fun `doWork retries when sync returns zero`() = runBlocking {
+        val app = AppPackage("com.test.app", 1, signature = "hash1")
+        coEvery { packageAnalyzer.analyzePackage("com.test.app") } returns app
+        coEvery { packageAnalyzer.analyzePackage("com.test.two") } returns null
+        coEvery { threatRepository.syncScanLogsToCloud(listOf(app)) } returns 0
 
         val result = worker.doWork()
 

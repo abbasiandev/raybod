@@ -6,7 +6,11 @@ import dev.abbasian.agent.scanner.PackageAnalyzer
 import dev.abbasian.domain.model.RiskAssessment
 import dev.abbasian.domain.model.RiskLevel
 import dev.abbasian.domain.usecase.ScanAppUseCase
+import dev.abbasian.domain.usecase.SyncScanLogsUseCase
 import dev.abbasian.domain.repository.UserPreferencesRepository
+import dev.abbasian.agent.worker.CloudSyncScheduler
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -30,12 +34,15 @@ data class ScanUiState(
     val isLowSpeedMode: Boolean = false,
     val isRooted: Boolean = false,
     val isEmulator: Boolean = false,
+    val cloudSyncMessage: String? = null,
     val error: String? = null
 )
 
 @HiltViewModel
 class ScanViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val scanAppUseCase: ScanAppUseCase,
+    private val syncScanLogsUseCase: SyncScanLogsUseCase,
     private val packageAnalyzer: PackageAnalyzer,
     private val userPrefs: UserPreferencesRepository
 ) : ViewModel() {
@@ -129,7 +136,7 @@ class ScanViewModel @Inject constructor(
                         recentApps = currentRecentApps
                     )
 
-                    val result = scanAppUseCase(app, lowSpeedMode)
+                    val result = scanAppUseCase(app, lowSpeedMode, syncToCloud = false)
                     results.add(result)
 
                     _uiState.value = _uiState.value.copy(
@@ -142,6 +149,25 @@ class ScanViewModel @Inject constructor(
                 }
 
                 if (isActive) {
+                    _uiState.value = _uiState.value.copy(
+                        currentAppLabel = "Syncing to cloud..."
+                    )
+
+                    val syncedCount = syncScanLogsUseCase(apps)
+                    val cloudSyncMessage = when {
+                        apps.isEmpty() -> null
+                        syncedCount >= apps.size -> "Reported $syncedCount/${apps.size} apps to cloud"
+                        syncedCount > 0 -> "Reported $syncedCount/${apps.size} apps to cloud (retry scheduled)"
+                        else -> "Cloud sync failed — retry scheduled"
+                    }
+
+                    if (syncedCount < apps.size) {
+                        CloudSyncScheduler.enqueueRetry(
+                            appContext,
+                            apps.map { it.packageName }
+                        )
+                    }
+
                     val sortedResults = results.sortedByDescending { result ->
                         when (result.riskLevel) {
                             RiskLevel.CRITICAL -> 5
@@ -158,7 +184,8 @@ class ScanViewModel @Inject constructor(
                         progress = 1f,
                         currentApp = "Scan Complete",
                         currentAppLabel = "Finished",
-                        results = sortedResults
+                        results = sortedResults,
+                        cloudSyncMessage = cloudSyncMessage
                     )
 
                     val newTimestamp = System.currentTimeMillis()

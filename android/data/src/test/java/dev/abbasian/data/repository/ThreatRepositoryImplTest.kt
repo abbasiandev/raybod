@@ -232,6 +232,43 @@ class ThreatRepositoryImplTest {
     }
 
     @Test
+    fun `syncScanLogsToCloud reports apps in batches`() = runBlocking {
+        val packages = (1..30).map {
+            AppPackage("com.app$it", it.toLong(), signature = "hash$it")
+        }
+        coEvery { api.batchScan(any()) } returns dev.abbasian.data.remote.dto.BatchScanResultDto(
+            results = packages.map {
+                ScanResultDto(it.packageName, "SAFE", "", "Clean", emptyList())
+            }
+        )
+
+        val synced = repository.syncScanLogsToCloud(packages)
+
+        assertEquals(30, synced)
+        coVerify(exactly = 2) { api.batchScan(any()) }
+    }
+
+    @Test
+    fun `scanApp with syncToCloud false skips cloud report`() = runBlocking {
+        val appPackage = AppPackage("com.local.only", 1, signature = "hash")
+        val localResult = RiskAssessment(
+            packageName = "com.local.only",
+            riskLevel = RiskLevel.MEDIUM,
+            description = "Local only"
+        )
+
+        coEvery { riskDao.getRisk(any()) } returns null
+        coEvery { malwareScanner.scan(appPackage) } returns localResult
+
+        val result = repository.scanApp(appPackage, lowSpeedMode = false, syncToCloud = false)
+
+        assertEquals(RiskLevel.MEDIUM, result.riskLevel)
+        coVerify(exactly = 0) { api.analyzeApp(any()) }
+        coVerify(exactly = 0) { api.batchScan(any()) }
+        coVerify { riskDao.insertRisk(match { it.syncStatus == "PENDING" }) }
+    }
+
+    @Test
     fun `handles invalid riskLevel from cloud gracefully`() = runBlocking {
         // Given
         val appPackage = AppPackage("com.invalid.level", 1, signature = "hash")

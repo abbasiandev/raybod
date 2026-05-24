@@ -343,6 +343,12 @@ fun ScanScreen(
             viewModel.clearError()
         }
     }
+
+    LaunchedEffect(state.cloudSyncMessage) {
+        state.cloudSyncMessage?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
     
     // Show upgrade prompt after scan completes (first time only)
     LaunchedEffect(state.isScanning, state.results) {

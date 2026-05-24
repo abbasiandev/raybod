@@ -70,6 +70,12 @@ def test_analytics_page(client, admin_auth):
     response = client.get("/dashboard/analytics", cookies=admin_auth)
     assert response.status_code == 200
     assert "Scan History" in response.text
+    assert "Phone scans only" in response.text
+
+def test_analytics_phone_only_filter(client, admin_auth):
+    response = client.get("/dashboard/analytics?phone_only=1", cookies=admin_auth)
+    assert response.status_code == 200
+    assert "Phone scans only" in response.text
 
 def test_export_csv(client, admin_auth):
     response = client.get("/dashboard/export/csv", cookies=admin_auth)

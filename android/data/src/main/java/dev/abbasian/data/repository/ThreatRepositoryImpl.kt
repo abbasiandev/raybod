@@ -1,5 +1,6 @@
 package dev.abbasian.data.repository
 
+import android.util.Log
 import dev.abbasian.data.local.dao.RiskDao
 import dev.abbasian.data.mapper.toDomain
 import dev.abbasian.data.mapper.toEntity
@@ -18,9 +19,12 @@ class ThreatRepositoryImpl @Inject constructor(
     private val malwareScanner: dev.abbasian.data.ml.MalwareScanner
 ) : ThreatRepository {
 
-    override suspend fun scanApp(appPackage: AppPackage, lowSpeedMode: Boolean): RiskAssessment {
+    override suspend fun scanApp(
+        appPackage: AppPackage,
+        lowSpeedMode: Boolean,
+        syncToCloud: Boolean
+    ): RiskAssessment {
 
-        // 0. Fast Cloud Allowlist Check (Category 5.1 Optimization)
         if (!lowSpeedMode) {
             try {
                 val allowlistCheck = api.checkAllowlist(appPackage.packageName)
@@ -31,7 +35,9 @@ class ThreatRepositoryImpl @Inject constructor(
                         description = "Verified Safe via Global Cloud Allowlist",
                         heuristicsUsed = listOf("Cloud: Global Allowlist")
                     )
-                    reportToCloud(appPackage, safeResult)
+                    if (syncToCloud) {
+                        reportToCloud(appPackage, safeResult)
+                    }
                     riskDao.insertRisk(safeResult.toEntity(
                         syncStatus = dev.abbasian.data.local.entity.SyncStatus.SYNCED,
                         appVersion = appPackage.versionCode,
@@ -40,19 +46,19 @@ class ThreatRepositoryImpl @Inject constructor(
                     return safeResult
                 }
             } catch (e: Exception) {
-                // Fail silent and continue to local scan
+                Log.w(TAG, "Allowlist check failed for ${appPackage.packageName}", e)
             }
         }
 
-        // 1. Check local cache & Differential Scanning (Category 5.2)
         val cached = riskDao.getRisk(appPackage.packageName)
         if (cached != null && cached.lastUpdateTime == appPackage.lastUpdateTime) {
             val cachedResult = cached.toDomain()
-            reportToCloud(appPackage, cachedResult)
+            if (syncToCloud) {
+                reportToCloud(appPackage, cachedResult)
+            }
             return cachedResult
         }
 
-        // 1.1 Reputation Caching: Skip on-device ML if trusted signature (Category 5.3)
         if (dev.abbasian.domain.filter.SystemPackageFilter.isTrustedSignature(appPackage.signature)) {
             val trustedResult = RiskAssessment(
                 packageName = appPackage.packageName,
@@ -60,7 +66,9 @@ class ThreatRepositoryImpl @Inject constructor(
                 description = "Trusted Developer Signature Detected",
                 heuristicsUsed = listOf("Reputation: Trusted Developer")
             )
-            reportToCloud(appPackage, trustedResult)
+            if (syncToCloud) {
+                reportToCloud(appPackage, trustedResult)
+            }
             riskDao.insertRisk(trustedResult.toEntity(
                 syncStatus = dev.abbasian.data.local.entity.SyncStatus.SYNCED,
                 appVersion = appPackage.versionCode,
@@ -69,10 +77,17 @@ class ThreatRepositoryImpl @Inject constructor(
             return trustedResult
         }
 
-        // 2. Perform On-Device AI Scan (First Line of Defense)
         val localResult = malwareScanner.scan(appPackage)
 
-        // 3. Always report to cloud so admin analytics panel receives scan logs
+        if (!syncToCloud) {
+            riskDao.insertRisk(localResult.toEntity(
+                syncStatus = dev.abbasian.data.local.entity.SyncStatus.PENDING,
+                appVersion = appPackage.versionCode,
+                lastUpdateTime = appPackage.lastUpdateTime
+            ))
+            return localResult
+        }
+
         val cloudResult = reportToCloud(appPackage, localResult)
         val finalResult = mergeAssessments(localResult, cloudResult)
         val syncStatus = if (cloudResult != null) {
@@ -90,8 +105,24 @@ class ThreatRepositoryImpl @Inject constructor(
         return finalResult
     }
 
+    override suspend fun syncScanLogsToCloud(appPackages: List<AppPackage>): Int {
+        if (appPackages.isEmpty()) return 0
+
+        var synced = 0
+        appPackages.chunked(CLOUD_BATCH_SIZE).forEach { chunk ->
+            try {
+                val dtos = chunk.map { buildMetadataDto(it) }
+                api.batchScan(dev.abbasian.data.remote.dto.BatchScanRequestDto(dtos))
+                synced += chunk.size
+                Log.i(TAG, "Batch synced ${chunk.size} apps to cloud ($synced/${appPackages.size})")
+            } catch (e: Exception) {
+                Log.e(TAG, "Batch cloud sync failed for ${chunk.size} apps", e)
+            }
+        }
+        return synced
+    }
+
     override suspend fun scanApps(appPackages: List<AppPackage>): List<RiskAssessment> {
-        // Optimization: For large sets, use batch API (Category 5.1)
         if (appPackages.size > 5) {
             try {
                 val dtos = appPackages.map { buildMetadataDto(it) }
@@ -107,17 +138,12 @@ class ThreatRepositoryImpl @Inject constructor(
                     assessment
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                // Fallback to sequential scanning if batch fails
+                Log.e(TAG, "Batch scan failed, falling back to sequential", e)
             }
         }
-        return appPackages.map { scanApp(it) }
+        return appPackages.map { scanApp(it, lowSpeedMode = false, syncToCloud = true) }
     }
 
-    /**
-     * POST /api/v1/scan/analyze — creates ScanLog entries visible in the admin panel.
-     * Returns cloud assessment when available; failures are logged but do not block the scan.
-     */
     private suspend fun reportToCloud(
         appPackage: AppPackage,
         localResult: RiskAssessment?
@@ -125,7 +151,7 @@ class ThreatRepositoryImpl @Inject constructor(
         return try {
             api.analyzeApp(buildMetadataDto(appPackage, localResult)).toRiskAssessment()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Cloud report failed for ${appPackage.packageName}: ${e.message}")
             null
         }
     }
@@ -192,5 +218,10 @@ class ThreatRepositoryImpl @Inject constructor(
         RiskLevel.LOW -> 3
         RiskLevel.UNKNOWN -> 2
         RiskLevel.SAFE -> 1
+    }
+
+    private companion object {
+        const val TAG = "RaybodCloud"
+        const val CLOUD_BATCH_SIZE = 25
     }
 }

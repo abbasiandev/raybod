@@ -1,66 +1,51 @@
 package dev.abbasian.agent.worker
 
 import android.content.Context
+import android.util.Log
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import dev.abbasian.data.local.dao.RiskDao
-import dev.abbasian.data.local.entity.SyncStatus
-import dev.abbasian.data.mapper.toDomain
-import dev.abbasian.data.mapper.toEntity
-import dev.abbasian.data.remote.api.CloudBrainApi
-import dev.abbasian.data.remote.dto.AppMetadataDto
-import dev.abbasian.domain.model.RiskAssessment
-import dev.abbasian.domain.model.RiskLevel
-import javax.inject.Inject
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dev.abbasian.agent.scanner.PackageAnalyzer
+import dev.abbasian.domain.repository.ThreatRepository
 
-class CloudSyncWorker(
-    context: Context,
-    params: WorkerParameters,
-    private val riskDao: RiskDao,
-    private val api: CloudBrainApi
-) : CoroutineWorker(context, params) {
+@HiltWorker
+class CloudSyncWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val threatRepository: ThreatRepository,
+    private val packageAnalyzer: PackageAnalyzer
+) : CoroutineWorker(context, workerParams) {
 
-    override suspend fun doWork(): androidx.work.ListenableWorker.Result {
-        val pendingRisks = riskDao.getAllRisks().filter { it.syncStatus == SyncStatus.PENDING.name }
-        
-        if (pendingRisks.isEmpty()) return androidx.work.ListenableWorker.Result.success()
+    override suspend fun doWork(): Result {
+        val packageNames = workerParams.inputData
+            .getString(CloudSyncScheduler.KEY_PACKAGE_NAMES)
+            ?.split(",")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
 
-        var successCount = 0
-        pendingRisks.forEach { entity ->
-            try {
-                // Here we might need more metadata than stored in CachedRiskEntity
-                // For simplicity in this debt-fix, we'll try to sync what we have
-                // A better approach would be to store the full DTO in a separate table
-                
-                // For now, let's assume we have enough to re-request or just mark as synced if we want to be simple
-                // In a real scenario, we'd need signature and permissions again.
-                // Let's assume we only retry if we have the full data or just simplify for the task.
-                
-                // For the task's sake, let's implement the logic to fetch and update.
-                val response = api.analyzeApp(AppMetadataDto(
-                    packageName = entity.packageName,
-                    versionCode = entity.appVersion,
-                    signature = "", 
-                    permissions = emptyList(),
-                    hasReflection = false,
-                    hasDynamicLoading = false
-                ))
-
-                val updatedAssessment = RiskAssessment(
-                    packageName = response.packageName,
-                    riskLevel = try { RiskLevel.valueOf(response.riskLevel) } catch (e: Exception) { RiskLevel.UNKNOWN },
-                    threatType = response.threatType,
-                    description = response.description,
-                    heuristicsUsed = response.heuristicsUsed
-                )
-
-                riskDao.insertRisk(updatedAssessment.toEntity(SyncStatus.SYNCED))
-                successCount++
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        if (packageNames.isEmpty()) {
+            Log.w(TAG, "No packages to sync")
+            return Result.failure()
         }
 
-        return if (successCount > 0) androidx.work.ListenableWorker.Result.success() else androidx.work.ListenableWorker.Result.retry()
+        val appPackages = packageNames.mapNotNull { packageAnalyzer.analyzePackage(it) }
+        if (appPackages.isEmpty()) {
+            return Result.retry()
+        }
+
+        val synced = threatRepository.syncScanLogsToCloud(appPackages)
+        Log.i(TAG, "Retry synced $synced/${appPackages.size} apps")
+
+        return when {
+            synced >= appPackages.size -> Result.success()
+            synced > 0 -> Result.success()
+            else -> Result.retry()
+        }
+    }
+
+    private companion object {
+        const val TAG = "RaybodCloud"
     }
 }

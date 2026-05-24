@@ -3,7 +3,7 @@ Dashboard web endpoints with Jinja2 templates.
 """
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Request, Depends, Form, HTTPException, Response
+from fastapi import APIRouter, Request, Depends, Form, HTTPException, Response, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session, joinedload
@@ -426,22 +426,78 @@ async def delete_user(
 @router.get("/analytics", response_class=HTMLResponse)
 async def analytics_page(
     request: Request,
+    device_id: Optional[str] = Query(None),
+    phone_only: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_auth)
 ):
     """Render detailed analytics page."""
-    logs = db.query(ScanLog).order_by(ScanLog.timestamp.desc()).limit(100).all()
-    
-    # Device fleet stats
-    unique_devices = db.query(func.count(func.distinct(ScanLog.device_id))).scalar() or 0
-    
+    query = db.query(ScanLog)
+
+    if phone_only:
+        query = query.filter(ScanLog.device_id.isnot(None), ScanLog.device_id != "")
+
+    if device_id:
+        query = query.filter(ScanLog.device_id == device_id)
+
+    logs = query.order_by(ScanLog.timestamp.desc()).limit(100).all()
+    total_filtered = query.count()
+
+    unique_devices = db.query(func.count(func.distinct(ScanLog.device_id))).filter(
+        ScanLog.device_id.isnot(None),
+        ScanLog.device_id != ""
+    ).scalar() or 0
+
+    filter_label = None
+    if device_id:
+        short_id = device_id[:12] + "..." if len(device_id) > 12 else device_id
+        filter_label = f"Showing {total_filtered} scans from device {short_id}"
+    elif phone_only:
+        filter_label = f"Showing {total_filtered} phone scans (device ID present)"
+
     return templates.TemplateResponse("dashboard/analytics.html", {
         "request": request,
         "current_user": current_user,
         "active_page": "analytics",
         "logs": logs,
-        "unique_devices": unique_devices
+        "unique_devices": unique_devices,
+        "device_id": device_id or "",
+        "phone_only": phone_only,
+        "filter_label": filter_label,
+        "total_filtered": total_filtered,
     })
+
+
+@router.post("/analytics/cleanup-test-data")
+async def cleanup_test_scan_logs(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
+):
+    """Remove debug/API test scan logs from analytics."""
+    test_prefixes = (
+        "com.rate.test.%",
+        "com.batchlimit.%",
+        "com.batch.test.%",
+        "com.phone.test.%",
+        "com.empty.sig",
+    )
+    deleted = 0
+    for prefix in test_prefixes:
+        if prefix.endswith("%"):
+            deleted += db.query(ScanLog).filter(ScanLog.package_name.like(prefix)).delete(
+                synchronize_session=False
+            )
+        else:
+            deleted += db.query(ScanLog).filter(ScanLog.package_name == prefix).delete(
+                synchronize_session=False
+            )
+    db.commit()
+
+    return RedirectResponse(
+        url="/dashboard/analytics?phone_only=1",
+        status_code=303
+    )
 
 
 # --------------------------------------------------------------------------
