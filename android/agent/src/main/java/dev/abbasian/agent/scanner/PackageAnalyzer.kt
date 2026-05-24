@@ -128,7 +128,7 @@ class PackageAnalyzer(private val context: Context) {
             if (apkFile.exists()) {
                 // Heuristic: Scan first 50KB of APK for suspicious patterns
                 // Many malware samples leave detectable strings even without full DEX analysis
-                val bytes = apkFile.inputStream().use { it.readNBytes(1024 * 50) }
+                val bytes = apkFile.inputStream().use { readAtMost(it, 1024 * 50) }
                 val content = String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
                 
                 if (content.contains("DexClassLoader") || content.contains("PathClassLoader")) {
@@ -179,6 +179,17 @@ class PackageAnalyzer(private val context: Context) {
     private fun hashString(type: String, input: ByteArray): String {
         val bytes = MessageDigest.getInstance(type).digest(input)
         return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun readAtMost(inputStream: java.io.InputStream, maxBytes: Int): ByteArray {
+        val buffer = ByteArray(maxBytes)
+        var totalRead = 0
+        while (totalRead < maxBytes) {
+            val read = inputStream.read(buffer, totalRead, maxBytes - totalRead)
+            if (read == -1) break
+            totalRead += read
+        }
+        return if (totalRead == maxBytes) buffer else buffer.copyOf(totalRead)
     }
 
     private fun getListOfIntents(packageName: String): List<String> {

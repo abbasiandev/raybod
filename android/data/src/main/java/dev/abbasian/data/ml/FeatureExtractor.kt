@@ -53,8 +53,9 @@ class FeatureExtractor @Inject constructor(
         
         try {
             val gson = Gson()
-            val type = object : TypeToken<Map<String, List<String>>>() {}.type
-            val data: Map<String, List<String>> = gson.fromJson(json, type)
+            val listOfStringsType = TypeToken.getParameterized(List::class.java, String::class.java).type
+            val mapType = TypeToken.getParameterized(Map::class.java, String::class.java, listOfStringsType).type
+            val data: Map<String, List<String>> = gson.fromJson(json, mapType)
             
             permissionFeatureList = data["permissions"]?.toMutableList() ?: mutableListOf()
             intentFeatureList = data["intents"]?.toMutableList() ?: mutableListOf()

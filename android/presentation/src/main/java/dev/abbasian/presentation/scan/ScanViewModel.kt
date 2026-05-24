@@ -100,75 +100,77 @@ class ScanViewModel @Inject constructor(
                 currentApp = "",
                 currentAppLabel = "Preparing..."
             )
-            
-            val apps = packageAnalyzer.getInstalledApps() // This is heavy, should be background
-            val total = apps.size
-            val results = mutableListOf<RiskAssessment>()
 
-            _uiState.value = _uiState.value.copy(totalApps = total)
+            try {
+                val apps = packageAnalyzer.getInstalledApps()
+                val total = apps.size.coerceAtLeast(1)
+                val results = mutableListOf<RiskAssessment>()
 
-            apps.forEachIndexed { index, app ->
-                // Check if the coroutine is still active (not cancelled)
-                if (!isActive) {
+                _uiState.value = _uiState.value.copy(totalApps = apps.size)
+
+                apps.forEachIndexed { index, app ->
+                    if (!isActive) {
+                        _uiState.value = _uiState.value.copy(
+                            isScanning = false,
+                            currentApp = "Scan Stopped",
+                            currentAppLabel = "Cancelled"
+                        )
+                        return@launch
+                    }
+
+                    val currentRecentApps = (_uiState.value.recentApps + (app.packageName to app.appLabel))
+                        .takeLast(MAX_RECENT_APPS_DISPLAY)
+
                     _uiState.value = _uiState.value.copy(
-                        isScanning = false,
-                        currentApp = "Scan Stopped",
-                        currentAppLabel = "Cancelled"
+                        progress = index / total.toFloat(),
+                        currentApp = app.packageName,
+                        currentAppLabel = app.appLabel,
+                        scannedApps = index + 1,
+                        recentApps = currentRecentApps
                     )
-                    return@launch
-                }
-                
-                val currentRecentApps = (_uiState.value.recentApps + (app.packageName to app.appLabel))
-                    .takeLast(MAX_RECENT_APPS_DISPLAY)
 
-                _uiState.value = _uiState.value.copy(
-                    progress = index / total.toFloat(),
-                    currentApp = app.packageName,
-                    currentAppLabel = app.appLabel,
-                    scannedApps = index + 1,
-                    recentApps = currentRecentApps
-                )
-                
-                // Actual scan (calls Cloud or Cache)
-                val result = scanAppUseCase(app)
-                results.add(result)
-                
-                // Update UI state with latest results incrementally
-                _uiState.value = _uiState.value.copy(
-                    results = results.toList()
-                )
-                
-                // Add delay in low-speed mode for better performance
-                if (lowSpeedMode && isActive) {
-                    delay(LOW_SPEED_DELAY_MS)
-                }
-            }
+                    val result = scanAppUseCase(app, lowSpeedMode)
+                    results.add(result)
 
-            // Only update to complete if scan wasn't cancelled
-            if (isActive) {
-                // Sort results: Critical > High > Medium > Low > Safe > Unknown
-                val sortedResults = results.sortedByDescending { result ->
-                    when (result.riskLevel) {
-                        RiskLevel.CRITICAL -> 5
-                        RiskLevel.HIGH -> 4
-                        RiskLevel.MEDIUM -> 3
-                        RiskLevel.LOW -> 2
-                        RiskLevel.SAFE -> 1
-                        RiskLevel.UNKNOWN -> 0
+                    _uiState.value = _uiState.value.copy(
+                        results = results.toList()
+                    )
+
+                    if (lowSpeedMode && isActive) {
+                        delay(LOW_SPEED_DELAY_MS)
                     }
                 }
-                
+
+                if (isActive) {
+                    val sortedResults = results.sortedByDescending { result ->
+                        when (result.riskLevel) {
+                            RiskLevel.CRITICAL -> 5
+                            RiskLevel.HIGH -> 4
+                            RiskLevel.MEDIUM -> 3
+                            RiskLevel.LOW -> 2
+                            RiskLevel.SAFE -> 1
+                            RiskLevel.UNKNOWN -> 0
+                        }
+                    }
+
+                    _uiState.value = _uiState.value.copy(
+                        isScanning = false,
+                        progress = 1f,
+                        currentApp = "Scan Complete",
+                        currentAppLabel = "Finished",
+                        results = sortedResults
+                    )
+
+                    val newTimestamp = System.currentTimeMillis()
+                    userPrefs.setLastScanTimestamp(newTimestamp)
+                    userPrefs.setDailyScanCount(if (isSameDay(lastScan, newTimestamp)) currentDayCount + 1 else 1)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ScanViewModel", "Scan failed", e)
                 _uiState.value = _uiState.value.copy(
                     isScanning = false,
-                    progress = 1f,
-                    currentApp = "Scan Complete",
-                    currentAppLabel = "Finished",
-                    results = sortedResults
+                    error = "Scan failed: ${e.message ?: "Unknown error"}"
                 )
-                
-                val newTimestamp = System.currentTimeMillis()
-                userPrefs.setLastScanTimestamp(newTimestamp)
-                userPrefs.setDailyScanCount(if (isSameDay(lastScan, newTimestamp)) currentDayCount + 1 else 1)
             }
         }
     }

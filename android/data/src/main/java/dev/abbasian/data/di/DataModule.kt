@@ -70,7 +70,7 @@ object DataModule {
     @Singleton
     fun provideOkHttpClient(): okhttp3.OkHttpClient {
         val logging = okhttp3.logging.HttpLoggingInterceptor().apply {
-            level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+            level = okhttp3.logging.HttpLoggingInterceptor.Level.BASIC
         }
         
         return okhttp3.OkHttpClient.Builder()

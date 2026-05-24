@@ -10,9 +10,9 @@ import javax.inject.Inject
 class ScanAppUseCase @Inject constructor(
     private val threatRepository: ThreatRepository
 ) {
-    suspend operator fun invoke(appPackage: AppPackage): RiskAssessment {
+    suspend operator fun invoke(appPackage: AppPackage, lowSpeedMode: Boolean = false): RiskAssessment {
         return withContext(Dispatchers.Default) {
-            threatRepository.scanApp(appPackage)
+            threatRepository.scanApp(appPackage, lowSpeedMode)
         }
     }
 }
