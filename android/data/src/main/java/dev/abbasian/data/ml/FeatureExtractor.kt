@@ -5,7 +5,6 @@ import dev.abbasian.domain.model.AppPackage
 import dev.abbasian.domain.model.DrebinFeatures
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.io.InputStream
 import java.nio.charset.Charset
 import javax.inject.Inject
@@ -42,6 +41,11 @@ class FeatureExtractor @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
+    private data class FeaturesConfig(
+        val permissions: List<String> = emptyList(),
+        val intents: List<String> = emptyList()
+    )
+
     private val permissionFeatures: List<String>
     private val intentFeatures: List<String>
     val vectorSize: Int
@@ -52,14 +56,9 @@ class FeatureExtractor @Inject constructor(
         var intentFeatureList = mutableListOf<String>()
         
         try {
-            val gson = Gson()
-            val listOfStringsType = TypeToken.getParameterized(List::class.java, String::class.java).type
-            val mapType = TypeToken.getParameterized(Map::class.java, String::class.java, listOfStringsType).type
-            val data: Map<String, List<String>> = gson.fromJson(json, mapType)
-            
-            permissionFeatureList = data["permissions"]?.toMutableList() ?: mutableListOf()
-            intentFeatureList = data["intents"]?.toMutableList() ?: mutableListOf()
-            
+            val data = Gson().fromJson(json, FeaturesConfig::class.java)
+            permissionFeatureList = data.permissions.toMutableList()
+            intentFeatureList = data.intents.toMutableList()
         } catch (e: Exception) {
             e.printStackTrace()
         }

@@ -120,7 +120,7 @@ class ScanViewModelTest {
         
         val apps = listOf(AppPackage("com.app1", 1, signature = "hash1"))
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
-        coEvery { scanAppUseCase(any()) } returns RiskAssessment(
+        coEvery { scanAppUseCase(any(), any()) } returns RiskAssessment(
             packageName = "com.app1",
             riskLevel = RiskLevel.SAFE,
             description = "Clean"
@@ -147,7 +147,7 @@ class ScanViewModelTest {
         
         val apps = listOf(AppPackage("com.app1", 1, signature = "hash1"))
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
-        coEvery { scanAppUseCase(any()) } returns RiskAssessment(
+        coEvery { scanAppUseCase(any(), any()) } returns RiskAssessment(
             packageName = "com.app1",
             riskLevel = RiskLevel.SAFE,
             description = "Clean"
@@ -176,7 +176,7 @@ class ScanViewModelTest {
         )
 
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
-        coEvery { scanAppUseCase(any()) } returns assessment
+        coEvery { scanAppUseCase(any(), any()) } returns assessment
 
         // When
         viewModel.startScan()
@@ -210,8 +210,8 @@ class ScanViewModelTest {
         )
 
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
-        coEvery { scanAppUseCase(apps[0]) } returns safeAssessment
-        coEvery { scanAppUseCase(apps[1]) } returns malwareAssessment
+        coEvery { scanAppUseCase(apps[0], any()) } returns safeAssessment
+        coEvery { scanAppUseCase(apps[1], any()) } returns malwareAssessment
 
         // When
         viewModel.startScan()
@@ -233,7 +233,7 @@ class ScanViewModelTest {
         )
         
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
-        coEvery { scanAppUseCase(any()) } returns RiskAssessment(
+        coEvery { scanAppUseCase(any(), any()) } returns RiskAssessment(
             packageName = "test",
             riskLevel = RiskLevel.SAFE,
             description = "Clean"
@@ -274,7 +274,7 @@ class ScanViewModelTest {
         )
 
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
-        coEvery { scanAppUseCase(any()) } returns RiskAssessment(
+        coEvery { scanAppUseCase(any(), any()) } returns RiskAssessment(
             packageName = "test",
             riskLevel = RiskLevel.SAFE,
             description = "Clean"
@@ -285,9 +285,9 @@ class ScanViewModelTest {
         advanceUntilIdle()
 
         // Then
-        coVerify(exactly = 3) { scanAppUseCase(any()) }
+        coVerify(exactly = 3) { scanAppUseCase(any(), any()) }
         apps.forEach { app ->
-            coVerify { scanAppUseCase(app) }
+            coVerify { scanAppUseCase(app, any()) }
         }
     }
 
@@ -301,7 +301,7 @@ class ScanViewModelTest {
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
         
         RiskLevel.entries.forEachIndexed { index, level ->
-            coEvery { scanAppUseCase(apps[index]) } returns RiskAssessment(
+            coEvery { scanAppUseCase(apps[index], any()) } returns RiskAssessment(
                 packageName = "com.${level.name.lowercase()}",
                 riskLevel = level,
                 description = "Test $level"
@@ -337,12 +337,12 @@ class ScanViewModelTest {
 
         coEvery { packageAnalyzer.getInstalledApps() } returns apps
         
-        coEvery { scanAppUseCase(apps[0]) } returns RiskAssessment("com.safe", RiskLevel.SAFE, description = "Safe")
-        coEvery { scanAppUseCase(apps[1]) } returns RiskAssessment("com.critical", RiskLevel.CRITICAL, description = "Critical")
-        coEvery { scanAppUseCase(apps[2]) } returns RiskAssessment("com.high", RiskLevel.HIGH, description = "High")
-        coEvery { scanAppUseCase(apps[3]) } returns RiskAssessment("com.medium", RiskLevel.MEDIUM, description = "Medium")
-        coEvery { scanAppUseCase(apps[4]) } returns RiskAssessment("com.low", RiskLevel.LOW, description = "Low")
-        coEvery { scanAppUseCase(apps[5]) } returns RiskAssessment("com.unknown", RiskLevel.UNKNOWN, description = "Unknown")
+        coEvery { scanAppUseCase(apps[0], any()) } returns RiskAssessment("com.safe", RiskLevel.SAFE, description = "Safe")
+        coEvery { scanAppUseCase(apps[1], any()) } returns RiskAssessment("com.critical", RiskLevel.CRITICAL, description = "Critical")
+        coEvery { scanAppUseCase(apps[2], any()) } returns RiskAssessment("com.high", RiskLevel.HIGH, description = "High")
+        coEvery { scanAppUseCase(apps[3], any()) } returns RiskAssessment("com.medium", RiskLevel.MEDIUM, description = "Medium")
+        coEvery { scanAppUseCase(apps[4], any()) } returns RiskAssessment("com.low", RiskLevel.LOW, description = "Low")
+        coEvery { scanAppUseCase(apps[5], any()) } returns RiskAssessment("com.unknown", RiskLevel.UNKNOWN, description = "Unknown")
 
         // When
         viewModel.startScan()

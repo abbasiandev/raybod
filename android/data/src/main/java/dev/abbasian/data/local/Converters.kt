@@ -9,9 +9,8 @@ class Converters {
 
     companion object {
         private val gson = Gson()
-        private val stringListType = TypeToken.getParameterized(List::class.java, String::class.java).type
         private val stringFloatMapType =
-            TypeToken.getParameterized(Map::class.java, String::class.java, Float::class.java).type
+            TypeToken.getParameterized(Map::class.java, String::class.java, java.lang.Float::class.java).type
     }
 
     @TypeConverter
@@ -20,7 +19,7 @@ class Converters {
     @TypeConverter
     fun toStringList(value: String): List<String> {
         if (value.isBlank()) return emptyList()
-        return gson.fromJson(value, stringListType) ?: emptyList()
+        return gson.fromJson(value, Array<String>::class.java)?.toList() ?: emptyList()
     }
 
     @TypeConverter
