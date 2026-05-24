@@ -31,13 +31,13 @@ class ScanAppUseCaseTest {
             description = "Suspicious behavior detected"
         )
         
-        coEvery { threatRepository.scanApp(appPackage, false) } returns expectedAssessment
+        coEvery { threatRepository.scanApp(appPackage, false, true) } returns expectedAssessment
 
         // When
         val result = scanAppUseCase(appPackage)
 
         // Then
         assertEquals(expectedAssessment, result)
-        coVerify(exactly = 1) { threatRepository.scanApp(appPackage, false) }
+        coVerify(exactly = 1) { threatRepository.scanApp(appPackage, false, true) }
     }
 }
