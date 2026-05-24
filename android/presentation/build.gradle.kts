@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.codekhoda.presentation"
+    namespace = "dev.abbasian.presentation"
     compileSdk = 34
 
     defaultConfig {

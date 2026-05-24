@@ -2,7 +2,7 @@
 
 > **Version**: 1.2.0 | **Last Updated**: 2025-12-19 | **Status**: All Phases Complete (excluding Enterprise)
 
-This document serves as the single source of truth for the **Hybrid Cloud Sentinel** project. It outlines the strategic mandate, system architecture, and the phased implementation roadmap to deliver a next-generation mobile threat defense platform.
+This document serves as the single source of truth for the **Raybod** project. It outlines the strategic mandate, system architecture, and the phased implementation roadmap to deliver a next-generation mobile threat defense platform.
 
 ---
 
@@ -20,7 +20,7 @@ Mobile devices are the new perimeter. The convergence of personal and profession
 3.  **Surveillanceware**: Stealthy data exfiltration (e.g., BnkRat, KrSpy).
 4.  **Sideloaded Apps**: Bypassing store vetting mechanisms.
 
-### 1.2 The Solution: Hybrid Cloud Sentinel
+### 1.2 The Solution: Raybod
 Our response is **"Practical AI"**:
 *   **On-Device**: Instant, offline, battery-efficient protection using TFLite.
 *   **Cloud**: Deep analysis and global threat intelligence.

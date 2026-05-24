@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.codekhoda.agent"
+    namespace = "dev.abbasian.agent"
     compileSdk = 34
 
     defaultConfig {

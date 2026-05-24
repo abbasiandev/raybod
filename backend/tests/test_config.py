@@ -17,7 +17,7 @@ class TestSettings:
         # We need to clear any existing env vars first
         test_settings = Settings(_env_file=None)
         
-        assert test_settings.APP_NAME == "Hybrid Cloud Sentinel Brain"
+        assert test_settings.APP_NAME == "Raybod Brain"
         assert test_settings.VERSION == "1.0.0"
         assert test_settings.DEBUG is False
         assert test_settings.PORT == 8000

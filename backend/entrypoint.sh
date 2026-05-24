@@ -2,7 +2,7 @@
 set -e
 
 echo "==================================="
-echo "Hybrid Cloud Sentinel - Startup"
+echo "Raybod - Startup"
 echo "==================================="
 
 # Ensure /data directory exists and is writable

@@ -6,17 +6,17 @@ plugins {
 }
 
 android {
-    namespace = "com.codekhoda.hybridcloudsentinel"
+    namespace = "dev.abbasian.raybod"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.codekhoda.hybridcloudsentinel"
+        applicationId = "dev.abbasian.raybod"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0-alpha"
 
-        testInstrumentationRunner = "com.codekhoda.hybridcloudsentinel.HiltTestRunner"
+        testInstrumentationRunner = "dev.abbasian.raybod.HiltTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }

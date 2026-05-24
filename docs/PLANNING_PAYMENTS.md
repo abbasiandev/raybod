@@ -4,7 +4,7 @@
 > **Context**: Implemented Freemium/Featured tiers with a Sandbox Payment Gateway.
 
 ## 1.0 Overview
-To sustain the development of **Hybrid Cloud Sentinel**, we have introduced a tiered subscription model. This phase involved creating a "Featured" (Premium) plan and a "Freemium" plan, supported by a custom Sandbox Payment Gateway for testing and demonstration purposes.
+To sustain the development of **Raybod**, we have introduced a tiered subscription model. This phase involved creating a "Featured" (Premium) plan and a "Freemium" plan, supported by a custom Sandbox Payment Gateway for testing and demonstration purposes.
 
 ## 2.0 Subscription Tiers
 

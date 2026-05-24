@@ -1,4 +1,4 @@
-# 🛡️ Hybrid Cloud Sentinel
+# 🛡️ Raybod
 
 <div align="center">
 
@@ -21,7 +21,7 @@
 
 ## 🎯 Overview
 
-**Hybrid Cloud Sentinel (HCS)** is a mobile security MVP that combines a lightweight on-device Android agent with a powerful Python-based backend analysis engine. The solution provides comprehensive threat detection while maintaining minimal battery impact on the user's device.
+**Raybod** is a mobile security MVP that combines a lightweight on-device Android agent with a powerful Python-based backend analysis engine. The solution provides comprehensive threat detection while maintaining minimal battery impact on the user's device.
 
 ### Key Value Proposition
 
@@ -44,7 +44,7 @@ We prioritize **Clean Architecture** with **MVVM** to ensure scalability and tes
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                     HYBRID CLOUD SENTINEL                    │
+│                            RAYBOD                            │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌─────────────────┐                    ┌─────────────────┐  │
@@ -139,8 +139,8 @@ The Android app is pre-configured to use the live Liara backend at `https://code
 #### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/hybrid-cloud-sentinel.git
-cd hybrid-cloud-sentinel
+git clone https://github.com/your-org/raybod.git
+cd raybod
 ```
 
 #### 2. Start the Backend (Cloud Brain)
@@ -228,7 +228,7 @@ For production with high traffic, consider migrating to PostgreSQL by:
 ## 📁 Project Structure
 
 ```
-hybrid-cloud-sentinel/
+raybod/
 ├── 📂 android/                    # Android Application
 │   ├── 📂 app/                    # Main application module
 │   ├── 📂 domain/                 # Business logic (Pure Kotlin)

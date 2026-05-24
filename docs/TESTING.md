@@ -1,6 +1,6 @@
-# 🧪 Hybrid Cloud Sentinel - Test Suite
+# 🧪 Raybod - Test Suite
 
-This document describes the comprehensive test suite for the Hybrid Cloud Sentinel project.
+This document describes the comprehensive test suite for the Raybod project.
 
 ---
 

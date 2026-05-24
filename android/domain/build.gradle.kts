@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.codekhoda.domain"
+    namespace = "dev.abbasian.domain"
     compileSdk = 34
 
     defaultConfig {

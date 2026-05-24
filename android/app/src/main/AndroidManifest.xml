@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
-        android:name=".HybridCloudSentinelApp"
+        android:name=".RaybodApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -21,7 +21,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.HybridCloudSentinel"
+        android:theme="@style/Theme.Raybod"
         tools:targetApi="31">
 
         <!-- Disable default WorkManager initialization since we use custom Configuration.Provider -->
@@ -39,7 +39,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.HybridCloudSentinel">
+            android:theme="@style/Theme.Raybod">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -56,7 +56,7 @@
 
         <!-- Sentinel Service for real-time malware protection -->
         <service
-            android:name="com.codekhoda.agent.service.SentinelService"
+            android:name="dev.abbasian.agent.service.SentinelService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
@@ -67,7 +67,7 @@
 
         <!-- Package Receiver for monitoring app installations -->
         <receiver
-            android:name="com.codekhoda.agent.service.PackageReceiver"
+            android:name="dev.abbasian.agent.service.PackageReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
@@ -82,7 +82,7 @@
 
         <!-- Category 2.2: Accessibility Abuse Monitoring -->
         <service
-            android:name="com.codekhoda.agent.service.SentinelAccessibilityService"
+            android:name="dev.abbasian.agent.service.SentinelAccessibilityService"
             android:label="Sentinel Advanced Protection"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="false">
@@ -96,7 +96,7 @@
 
         <!-- Category 2.1: Network Traffic Fingerprinting -->
         <service
-            android:name="com.codekhoda.agent.service.SentinelVpnService"
+            android:name="dev.abbasian.agent.service.SentinelVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="false">
             <intent-filter>

@@ -130,7 +130,7 @@ async def health_check():
     """Health check endpoint with diagnostic info."""
     return {
         "status": "healthy",
-        "service": "Hybrid Cloud Sentinel Brain",
+        "service": "Raybod Brain",
         "debug": settings.DEBUG,
         "templates_exist": os.path.exists('app/templates'),
         "static_exist": os.path.exists('app/static'),

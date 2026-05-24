@@ -1,6 +1,6 @@
 # 🛠️ Development Guide
 
-This guide provides coding standards and contribution guidelines for Hybrid Cloud Sentinel.
+This guide provides coding standards and contribution guidelines for Raybod.
 
 ---
 

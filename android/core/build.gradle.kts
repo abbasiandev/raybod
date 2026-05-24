@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.codekhoda.core"
+    namespace = "dev.abbasian.core"
     compileSdk = 34
 
     defaultConfig {

@@ -6,12 +6,12 @@ plugins {
 }
 
 android {
-    namespace = "com.codekhoda.data"
+    namespace = "dev.abbasian.data"
     compileSdk = 34
 
     defaultConfig {
         minSdk = 26
-        testInstrumentationRunner = "com.codekhoda.data.HiltTestRunner"
+        testInstrumentationRunner = "dev.abbasian.data.HiltTestRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {

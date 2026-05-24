@@ -13,7 +13,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "HybridCloudSentinel"
+rootProject.name = "Raybod"
 include(":app")
 include(":core")
 include(":data")

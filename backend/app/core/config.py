@@ -26,7 +26,7 @@ def _get_database_url():
     return "sqlite:///./sentinel_brain.db"
 
 class Settings(BaseSettings):
-    APP_NAME: str = "Hybrid Cloud Sentinel Brain"
+    APP_NAME: str = "Raybod Brain"
     VERSION: str = "1.0.0"
     DEBUG: bool = False
     PORT: int = 8000

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Hybrid Cloud Sentinel follows **Clean Architecture** principles combined with **MVVM** pattern and **Multi-module** design. This document provides a comprehensive overview of the system architecture, design decisions, and component interactions.
+Raybod follows **Clean Architecture** principles combined with **MVVM** pattern and **Multi-module** design. This document provides a comprehensive overview of the system architecture, design decisions, and component interactions.
 
 ---
 
@@ -86,7 +86,7 @@ Hybrid Cloud Sentinel follows **Clean Architecture** principles combined with **
 
 ```kotlin
 // Key Components
-- HybridCloudSentinelApp.kt     // Application class
+- RaybodApp.kt     // Application class
 - MainActivity.kt                // Single Activity host
 - Navigation.kt                  // Navigation graph
 - di/                           // Hilt modules

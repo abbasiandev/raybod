@@ -1,6 +1,6 @@
 # 🚀 Setup Guide
 
-This guide provides detailed instructions for setting up the Hybrid Cloud Sentinel development environment.
+This guide provides detailed instructions for setting up the Raybod development environment.
 
 ---
 
@@ -44,8 +44,8 @@ This guide provides detailed instructions for setting up the Hybrid Cloud Sentin
 
 ```bash
 # Clone the main repository
-git clone https://github.com/your-org/hybrid-cloud-sentinel.git
-cd hybrid-cloud-sentinel
+git clone https://github.com/your-org/raybod.git
+cd raybod
 
 # Verify project structure
 ls -la
@@ -121,7 +121,7 @@ curl http://localhost:8000/health
 
 1. Launch **Android Studio**
 2. Select **Open an existing project**
-3. Navigate to `hybrid-cloud-sentinel/android/`
+3. Navigate to `raybod/android/`
 4. Click **Open**
 
 ### Sync Gradle
@@ -287,10 +287,10 @@ Error: Room cannot verify the data integrity
 **Solution:**
 ```bash
 # Clear app data on device/emulator
-adb shell pm clear com.codekhoda.hybridcloudsentinel
+adb shell pm clear dev.abbasian.raybod
 
 # Or uninstall and reinstall
-adb uninstall com.codekhoda.hybridcloudsentinel
+adb uninstall dev.abbasian.raybod
 ```
 
 #### Python Version Mismatch
@@ -311,7 +311,7 @@ python3 --version
 
 ### Getting Help
 
-1. Check existing [GitHub Issues](https://github.com/your-org/hybrid-cloud-sentinel/issues)
+1. Check existing [GitHub Issues](https://github.com/your-org/raybod/issues)
 2. Search documentation in `docs/` folder
 3. Create a new issue with:
    - Steps to reproduce
