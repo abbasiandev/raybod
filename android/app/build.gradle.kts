@@ -14,8 +14,8 @@ android {
         applicationId = "dev.abbasian.raybod"
         minSdk = 26
         targetSdk = 34
-        versionCode = 7
-        versionName = "1.0.0-alpha.6.1"
+        versionCode = 8
+        versionName = "1.0.0-alpha.7"
 
         manifestPlaceholders["sentryRelease"] = "$applicationId@$versionName+$versionCode"
         manifestPlaceholders["sentryEnvironment"] = "debug"

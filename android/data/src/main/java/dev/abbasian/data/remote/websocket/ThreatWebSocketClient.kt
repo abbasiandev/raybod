@@ -1,7 +1,7 @@
 package dev.abbasian.data.remote.websocket
 
 import android.util.Log
-import com.google.gson.Gson
+import dev.abbasian.data.remote.BackendEndpoint
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import okhttp3.*
@@ -21,7 +21,8 @@ class ThreatWebSocketClient @Inject constructor(
         if (webSocket != null) return
 
         val request = Request.Builder()
-            .url("wss://gitr_g6pdx-727.b.jrnm.app/ws/threats")
+            .url(BackendEndpoint.wssThreatsUrl())
+            .header("Host", BackendEndpoint.HOST)
             .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
