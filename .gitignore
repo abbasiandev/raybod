@@ -3,6 +3,7 @@ references/
 samples/
 
 # IDEs and Editors
+.cursor/
 .idea/
 .vscode/
 *.iml
