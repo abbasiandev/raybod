@@ -1,5 +1,6 @@
 package dev.abbasian.data.remote
 
+import android.util.Log
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -14,13 +15,15 @@ import java.util.concurrent.TimeUnit
 /**
  * Android rejects hostnames with underscores via IDN.toASCII (STD3 rules).
  * JustRunMy URLs like gitr_g6pdx-727.b.jrnm.app fail on device but work from curl on Mac.
- * Falls back to Google DNS-over-HTTPS JSON API when system DNS throws.
+ * Underscore hosts skip system DNS and resolve via public DNS JSON APIs instead.
  */
 object NetworkDns {
+    private const val TAG = "RaybodCloud"
+
     private val systemDns: Dns = Dns.SYSTEM
     private val bootstrapClient = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
     val preferIpv4: Dns = object : Dns {
@@ -32,27 +35,38 @@ object NetworkDns {
     }
 
     private fun resolveHostname(hostname: String): List<InetAddress> {
+        if (hostname.contains('_')) {
+            Log.i(TAG, "Resolving underscore hostname via public DNS: $hostname")
+            return resolveViaPublicDns(hostname)
+        }
+        return systemDns.lookup(hostname)
+    }
+
+    private fun resolveViaPublicDns(hostname: String): List<InetAddress> {
         return try {
-            systemDns.lookup(hostname)
-        } catch (systemError: Exception) {
-            if (hostname.contains('_')) {
-                resolveViaGoogleDns(hostname)
-            } else {
-                throw systemError
+            queryDnsJson("https://dns.google/resolve", hostname)
+        } catch (googleError: Exception) {
+            Log.w(TAG, "Google DNS lookup failed for $hostname: ${googleError.message}")
+            try {
+                queryDnsJson("https://cloudflare-dns.com/dns-query", hostname)
+            } catch (cloudflareError: Exception) {
+                Log.e(TAG, "Cloudflare DNS lookup failed for $hostname: ${cloudflareError.message}")
+                throw UnknownHostException(hostname)
             }
         }
     }
 
-    private fun resolveViaGoogleDns(hostname: String): List<InetAddress> {
+    private fun queryDnsJson(baseUrl: String, hostname: String): List<InetAddress> {
         val encodedHost = URLEncoder.encode(hostname, Charsets.UTF_8.name())
+        val separator = if (baseUrl.contains("?")) "&" else "?"
         val request = Request.Builder()
-            .url("https://dns.google/resolve?name=$encodedHost&type=A")
+            .url("${baseUrl}${separator}name=$encodedHost&type=A")
             .header("Accept", "application/dns-json")
             .build()
 
         bootstrapClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw UnknownHostException(hostname)
+                throw UnknownHostException("$hostname HTTP ${response.code}")
             }
             val body = response.body?.string() ?: throw UnknownHostException(hostname)
             val answers = JSONObject(body).optJSONArray("Answer") ?: JSONArray()
@@ -65,8 +79,9 @@ object NetworkDns {
                 }
             }
             if (addresses.isEmpty()) {
-                throw UnknownHostException(hostname)
+                throw UnknownHostException("$hostname (no A records)")
             }
+            Log.i(TAG, "Resolved $hostname -> ${addresses.first().hostAddress}")
             return addresses
         }
     }
