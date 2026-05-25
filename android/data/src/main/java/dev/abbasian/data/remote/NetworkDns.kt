@@ -30,9 +30,7 @@ object NetworkDns {
             if (hostname.contains('_')) {
                 return lookupPublicIpv4(hostname)
             }
-            val addresses = systemDns.lookup(hostname)
-            val ipv4 = addresses.filter { it is Inet4Address }
-            return if (ipv4.isNotEmpty()) ipv4 else addresses
+            return preferIpv4OrAll(systemDns.lookup(hostname))
         }
     }
 
@@ -72,8 +70,12 @@ object NetworkDns {
                 throw UnknownHostException("$hostname (no A records)")
             }
             Log.i(TAG, "Resolved $hostname -> ${addresses.joinToString { it.hostAddress ?: "?" }}")
-            val ipv4 = addresses.filter { it is Inet4Address }
-            return if (ipv4.isNotEmpty()) ipv4 else addresses
+            return preferIpv4OrAll(addresses)
         }
+    }
+
+    private fun preferIpv4OrAll(addresses: List<InetAddress>): List<InetAddress> {
+        val ipv4 = addresses.filter { it is Inet4Address }
+        return if (ipv4.isNotEmpty()) ipv4 else addresses
     }
 }

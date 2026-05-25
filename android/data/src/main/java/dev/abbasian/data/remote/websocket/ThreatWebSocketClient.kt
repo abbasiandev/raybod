@@ -1,6 +1,7 @@
 package dev.abbasian.data.remote.websocket
 
 import android.util.Log
+import com.google.gson.Gson
 import dev.abbasian.data.remote.BackendEndpoint
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

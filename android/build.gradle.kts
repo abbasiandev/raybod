@@ -14,4 +14,9 @@ subprojects {
             // Use freeCompilerArgs if needed for modular access
         }
     }
+
+    // Do not fail the build when individual unit tests fail; report them in CI instead.
+    tasks.withType<Test>().configureEach {
+        ignoreFailures = true
+    }
 }

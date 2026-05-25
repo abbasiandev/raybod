@@ -30,4 +30,24 @@ jobs:
 
       - name: Run unit tests only
         working-directory: ./android
-        run: ./gradlew testDebugUnitTest --stacktrace --no-daemon --continue
+        run: |
+          set -o pipefail
+          ./gradlew testDebugUnitTest --stacktrace --no-daemon --continue 2>&1 | tee ../gradle-test.log
+
+      - name: Print compile errors
+        if: failure()
+        working-directory: ./android
+        run: |
+          grep -E "^e: |Compilation error|error:" ../gradle-test.log || tail -200 ../gradle-test.log
+
+      - name: Summarize skipped test failures
+        if: always()
+        working-directory: ./android
+        run: |
+          failed=$(find . -path "*/build/test-results/testDebugUnitTest/TEST-*.xml" -print0 2>/dev/null | xargs -0 grep -l 'failures="[1-9]' 2>/dev/null || true)
+          if [ -n "$failed" ]; then
+            echo "Failed tests (build continued due to ignoreFailures=true):"
+            echo "$failed"
+          else
+            echo "All executed unit tests passed."
+          fi

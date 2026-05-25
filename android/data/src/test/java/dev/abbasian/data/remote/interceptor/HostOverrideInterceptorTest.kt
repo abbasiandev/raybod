@@ -14,18 +14,20 @@ class HostOverrideInterceptorTest {
         val server = MockWebServer()
         server.enqueue(MockResponse())
         server.start()
-
-        val client = OkHttpClient.Builder()
-            .addInterceptor(HostOverrideInterceptor("gitr_g6pdx-727.b.jrnm.app"))
-            .build()
-
-        client.newCall(
-            Request.Builder()
-                .url(server.url("/api/v1/scan"))
+        try {
+            val client = OkHttpClient.Builder()
+                .addInterceptor(HostOverrideInterceptor("gitr_g6pdx-727.b.jrnm.app"))
                 .build()
-        ).execute().close()
 
-        assertEquals("gitr_g6pdx-727.b.jrnm.app", server.takeRequest().getHeader("Host"))
-        server.shutdown()
+            client.newCall(
+                Request.Builder()
+                    .url(server.url("/api/v1/scan"))
+                    .build()
+            ).execute().close()
+
+            assertEquals("gitr_g6pdx-727.b.jrnm.app", server.takeRequest().getHeader("Host"))
+        } finally {
+            server.shutdown()
+        }
     }
 }
