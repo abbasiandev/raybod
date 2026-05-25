@@ -32,6 +32,7 @@ class RaybodApp : Application(), Configuration.Provider {
             options.isAttachThreads = true
         }
         super.onCreate()
+        dev.abbasian.data.remote.BackendEndpoint.prefetchAsync()
         scheduleModelUpdates()
     }
 

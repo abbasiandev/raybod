@@ -80,8 +80,7 @@ object DataModule {
             level = okhttp3.logging.HttpLoggingInterceptor.Level.BASIC
         }
 
-        // Resolve backend IP early so Retrofit never passes underscore hostname to OkHttp.
-        BackendEndpoint.ipv4()
+        BackendEndpoint.prefetchAsync()
 
         return okhttp3.OkHttpClient.Builder()
             .dns(dev.abbasian.data.remote.NetworkDns.preferIpv4)

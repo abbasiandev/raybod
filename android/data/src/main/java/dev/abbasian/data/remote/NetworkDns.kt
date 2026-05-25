@@ -1,5 +1,6 @@
 package dev.abbasian.data.remote
 
+import android.os.Looper
 import android.util.Log
 import okhttp3.Dns
 import okhttp3.OkHttpClient
@@ -18,8 +19,8 @@ object NetworkDns {
 
     private val systemDns: Dns = Dns.SYSTEM
     private val bootstrapClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
     val preferIpv4: Dns = object : Dns {
@@ -28,6 +29,7 @@ object NetworkDns {
                 return listOf(InetAddress.getByName(hostname))
             }
             if (hostname.contains('_')) {
+                assertBackgroundThread("underscore hostname DNS")
                 return lookupPublicIpv4(hostname)
             }
             return preferIpv4OrAll(systemDns.lookup(hostname))
@@ -35,20 +37,20 @@ object NetworkDns {
     }
 
     fun lookupPublicIpv4(hostname: String): List<InetAddress> {
+        assertBackgroundThread("public DNS lookup")
         Log.i(TAG, "Public DNS lookup for: $hostname")
         return try {
-            queryDnsJson("https://dns.google/resolve", hostname)
-        } catch (googleError: Exception) {
-            Log.w(TAG, "Google DNS failed for $hostname: ${googleError.message}")
-            queryDnsJson("https://cloudflare-dns.com/dns-query", hostname)
+            queryGoogleDns(hostname)
+        } catch (e: Exception) {
+            Log.w(TAG, "Google DNS failed for $hostname: ${e.message}")
+            throw UnknownHostException("$hostname (${e.message})")
         }
     }
 
-    private fun queryDnsJson(baseUrl: String, hostname: String): List<InetAddress> {
-        val encodedHost = URLEncoder.encode(hostname, Charsets.UTF_8.name())
-        val separator = if (baseUrl.contains("?")) "&" else "?"
+    private fun queryGoogleDns(hostname: String): List<InetAddress> {
+        val encoded = URLEncoder.encode(hostname, Charsets.UTF_8.name())
         val request = Request.Builder()
-            .url("${baseUrl}${separator}name=$encodedHost&type=A")
+            .url("https://dns.google/resolve?name=$encoded&type=A")
             .header("Accept", "application/dns-json")
             .build()
 
@@ -77,5 +79,11 @@ object NetworkDns {
     private fun preferIpv4OrAll(addresses: List<InetAddress>): List<InetAddress> {
         val ipv4 = addresses.filter { it is Inet4Address }
         return if (ipv4.isNotEmpty()) ipv4 else addresses
+    }
+
+    private fun assertBackgroundThread(label: String) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            throw UnknownHostException("$label blocked on main thread")
+        }
     }
 }
