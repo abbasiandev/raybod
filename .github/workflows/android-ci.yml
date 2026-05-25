@@ -1,10 +1,11 @@
 name: Android Release
 
 on:
-  workflow_run:
-    workflows: [ "Android Tests" ]
-    types: [ completed ]
+  push:
     branches: [ main ]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -14,9 +15,6 @@ jobs:
   build-release:
     name: Build Signed Release APK
     runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout code
