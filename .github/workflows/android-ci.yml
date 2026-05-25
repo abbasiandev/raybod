@@ -1,11 +1,10 @@
-name: Android CI
+name: Android Release
 
 on:
-  push:
+  workflow_run:
+    workflows: [ "Android Tests" ]
+    types: [ completed ]
     branches: [ main ]
-    paths:
-      - 'android/**'
-      - '.github/workflows/android-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -15,7 +14,9 @@ jobs:
   build-release:
     name: Build Signed Release APK
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout code
@@ -65,7 +66,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        run: ./gradlew assembleRelease --stacktrace --no-daemon -x test -x testDebugUnitTest -x testReleaseUnitTest
+        run: ./gradlew assembleRelease --stacktrace --no-daemon
 
       - name: Prepare release APK
         run: |

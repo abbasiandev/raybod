@@ -1,7 +1,6 @@
 package dev.abbasian.data.remote
 
 import android.util.Log
-import java.net.Inet4Address
 
 /**
  * JustRunMy hostnames contain underscores, which Android Java networking rejects (IDN.toASCII).

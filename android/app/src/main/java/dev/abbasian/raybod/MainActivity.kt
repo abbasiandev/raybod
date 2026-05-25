@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
                     OnboardingScreen(onComplete = { onboardingViewModel.completeOnboarding() })
                 } else {
                     MainLayout(
-                        title = "Sentinel Dashboard",
+                        title = "Raybod Dashboard",
                         userPlan = userPlan,
                         onNavigateToScan = {
                             navController.navigate("scan") {

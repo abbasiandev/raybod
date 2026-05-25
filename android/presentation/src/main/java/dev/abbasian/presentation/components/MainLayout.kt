@@ -65,7 +65,7 @@ fun MainLayout(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "SENTINEL",
+                                text = "RAYBOD",
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = NeonCyan,
                                 fontWeight = FontWeight.ExtraBold,

@@ -72,7 +72,8 @@ object NetworkDns {
                 throw UnknownHostException("$hostname (no A records)")
             }
             Log.i(TAG, "Resolved $hostname -> ${addresses.joinToString { it.hostAddress ?: "?" }}")
-            return addresses.filterIsInstance<Inet4Address>().ifEmpty { addresses }
+            val ipv4 = addresses.filter { it is Inet4Address }
+            return if (ipv4.isNotEmpty()) ipv4 else addresses
         }
     }
 }
